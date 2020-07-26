@@ -1,0 +1,12 @@
+{
+    "arms":
+    [
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-55790_purdue.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
+        }
+    ]
+}

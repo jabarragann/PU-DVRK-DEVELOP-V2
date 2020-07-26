@@ -1,0 +1,12 @@
+{
+    "arms":
+    [
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "io": "sawRobotIO1394-ECM-55658.xml-final",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json"
+        }
+    ]
+}

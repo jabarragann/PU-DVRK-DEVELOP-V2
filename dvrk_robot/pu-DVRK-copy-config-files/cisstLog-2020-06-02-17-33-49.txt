@@ -1,0 +1,360 @@
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- Class mtsIntuitiveResearchKitConsole: Configure: console using file "console-ECM.json"
+----> content of configuration file: 
+{
+	"arms" : 
+	[
+		{
+			"io" : "sawRobotIO1394-ECM-55658.xml-final",
+			"kinematic" : "ecm-straight.json",
+			"name" : "ECM",
+			"pid" : "sawControllersPID-ECM.xml",
+			"type" : "ECM"
+		}
+	]
+}
+<----
+M- Class mtsIntuitiveResearchKitConsole: Configure: using default io:period, io:port, io:firewire-protocol and io:watchdog-timeout
+M- Class mtsIntuitiveResearchKitConsole: Configure:
+     - Period IO is 0.0003
+     - FireWire port is 0
+     - Protocol is 1
+     - Watchdog timeout is 0.03
+FirewirePort::Init: number of ports = 1
+FirewirePort::Init: successfully initialized port 0
+FirewirePort::Init: successfully disabled cycle start packet
+FirewirePort::ScanNodes: base node id = ffc0
+FirewirePort::ScanNodes: building node map for d nodes:
+  Node 0, BoardId = 2, Firmware Version = 6
+  Node 1, BoardId = 3, Firmware Version = 6
+  Node 2, BoardId = 1, Firmware Version = 6
+  Node 3, BoardId = 0, Firmware Version = 6
+  Node 4, BoardId = 9, Firmware Version = 6
+  Node 5, BoardId = 8, Firmware Version = 6
+  Node 6, BoardId = 7, Firmware Version = 6
+  Node 7, BoardId = 6, Firmware Version = 6
+  Node 8, BoardId = 5, Firmware Version = 6
+  Node 9, BoardId = 4, Firmware Version = 6
+  Node a, BoardId = b, Firmware Version = 6
+  Node b, BoardId = a, Firmware Version = 6
+FirewirePort::ScanNodes: all nodes broadcast capable and support shorter wait
+System running with broadcast write
+M- Class mtsIntuitiveResearchKitConsole: Configure: configuring IO using "/home/juan/davinci_catkin_ws_1.7/src/cisst-saw/sawIntuitiveResearchKit/share/pu-DVRK/sawRobotIO1394-ECM-55658.xml-final"
+W- mtsRobot1394::SetBoards: ECM, board: 0, Id: 4, firmware: 6, FPGA serial: 6007-14, QLA serial: 6006-14
+W- mtsRobot1394::SetBoards: ECM, board: 1, Id: 5, firmware: 6, FPGA serial: 6007-43, QLA serial: 6006-43
+D- Class mtsIntuitiveResearchKitECM: AddStateTable: added state table "State" and corresponding interface "StateTableState" to task "ECM"
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #1: ECM: desired state UNINITIALIZED
+M- Class mtsIntuitiveResearchKitECM: Configure: ECM using file "/home/juan/davinci_catkin_ws_1.7/src/cisst-saw/sawIntuitiveResearchKit/components/../share/ecm-straight.json"
+----> content of configuration file: 
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+	// see dVRK user guide
+	"DH" : 
+	{
+		"links" : 
+		[
+			{
+				"A" : 0,
+				"D" : 0,
+				"alpha" : 1.5708,
+				"convention" : "modified",
+				"mode" : "active",
+				"offset" : 1.5708,
+				"theta" : 0,
+				"type" : "revolute"
+			},
+			{
+				"A" : 0,
+				"D" : 0,
+				"alpha" : -1.5708,
+				"convention" : "modified",
+				"mode" : "active",
+				"offset" : -1.5708,
+				"theta" : 0,
+				"type" : "revolute"
+			},
+			{
+				"A" : 0,
+				"D" : 0,
+				"alpha" : 1.5708,
+				"convention" : "modified",
+				"mode" : "active",
+				"offset" : -0.38219999999999998,
+				"theta" : 0,
+				"type" : "prismatic"
+			},
+			{
+				"A" : 0,
+				"D" : 0.38290000000000002,
+				"alpha" : 0,
+				"convention" : "modified",
+				"mode" : "active",
+				"offset" : 0,
+				"theta" : 0,
+				"type" : "revolute"
+			}
+		]
+	},
+	// rotation to match ISI convention (for read-only research API on commercial da Vinci)
+	"tooltip-offset" : 
+	[
+		[
+			0,
+			1,
+			0,
+			0
+		],
+		[
+			-1,
+			0,
+			0,
+			0
+		],
+		[
+			0,
+			0,
+			1,
+			0
+		],
+		[
+			0,
+			0,
+			0,
+			1
+		]
+	]
+}
+// ,
+// "homing-zero-position": 1 // or 0 for false
+<----
+M- Class mtsIntuitiveResearchKitECM: ConfigureDH ECM: loaded kinematics
+    MODIFIED DH    1.5708         0         0         0         hinge active        1.5708            0            0            0
+    MODIFIED DH   -1.5708         0         0         0         hinge active       -1.5708            0            0            0
+    MODIFIED DH    1.5708         0         0         0        slider active       -0.3822            0            0            0
+    MODIFIED DH         0         0         0    0.3829         hinge active             0            0            0            0
+
+M- Class mtsIntuitiveResearchKitArmQtWidget: Configure: 
+-M Class mtsIntuitiveResearchKitECM: RemoveInterfaceRequired: removed required interface "ExecIn"
+M- Class mtsIntuitiveResearchKitECM: Create: creating thread for task ECM
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- Class mtsIntuitiveResearchKitArmQtWidget: Create: default create method for component "ECM-GUI"
+M-M- osaThread::CreateInternal: create thread named: Unnamed
+ Class M- Class mtsIntuitiveResearchKitECM: StartupInternal: started for task "ECM"
+M- osaThread::CreateInternal: create thread named: Unnamed
+-M Class mtsIntuitiveResearchKitConsole: RemoveInterfaceRequired: removed required interface "ExecIn"
+M- Class mtsIntuitiveResearchKitConsole: Create: creating thread for task console
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: M- osaThread::CreateInternal: create thread named: Unnamed
+1.59113e+09s, #2: ECM: desired state UNINITIALIZED
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: Create: default create method for component "consoleGUI"
+M- osaThread::CreateInternal: create thread named: Unnamed
+ Class hr osaThread::CreateInternal: create thread named: mtsIntuitiveResearchKitConsoleUnnamed
+:  Class hr osaThread::CreateInternal: create thread named: mtsIntuitiveResearchKitConsoleUnnamed
+: RunInternal: begin task console
+M- Class mtsIntuitiveResearchKitConsole: StartupInternal: started for task "console"
+-M Class mtsIntuitiveResearchKitConsole: console:Main: M- osaThread::CreateInternal: create thread named: Unnamed
+1.59113e+09s, #1: console started, dVRK 1.7.0 / cisst 1.0.11
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- Class mtsIntuitiveResearchKitECM: StartupInternal: ended for task "ECM"
+M- Class mtsIntuitiveResearchKitConsole: StartupInternal: ended for task "console"
+M- Class mtsIntuitiveResearchKitConsole: RunInternal: wait to start task "console"
+M- Class mtsIntuitiveResearchKitConsole: RunInternal: wait to start task "console"
+M- Class mtsIntuitiveResearchKitArmQtWidget: WaitForState: called for component "ECM-GUI" for state "mtsComponentState
+  State:ready" has no effect for mtsComponent
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: WaitForState: called for component "consoleGUI" for state "mtsComponentState
+  State:ready" has no effect for mtsComponent
+M- Class mtsIntuitiveResearchKitECM: Start: starting task ECM
+M- Class mtsIntuitiveResearchKitECM: Start: started task ECM
+M- Class mtsIntuitiveResearchKitArmQtWidget: Start: default start method for component "ECM-GUI"
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #3: ECM: current state UNINITIALIZED
+M- Class mtsIntuitiveResearchKitConsole: RunInternal: wait to start task "console"
+M- Class mtsIntuitiveResearchKitConsole: Start: starting task console
+M- Class mtsIntuitiveResearchKitConsole: Start: started task console
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: Start: default start method for component "consoleGUI"
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: mtsIntuitiveResearchKitConsoleQtWidget::Startup
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #2: ECM: desired state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #3: ECM: current state UNINITIALIZED
+M- Class mtsIntuitiveResearchKitArmQtWidget: WaitForState: called for component "ECM-GUI" for state "mtsComponentState
+  State:active" has no effect for mtsComponent
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: WaitForState: called for component "consoleGUI" for state "mtsComponentState
+  State:active" has no effect for mtsComponent
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #4: ECM: desired state POWERED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #4: ECM: desired state POWERED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #5: ECM: current state CALIBRATING_ENCODERS_FROM_POTS
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #5: ECM: current state CALIBRATING_ENCODERS_FROM_POTS
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #6: ECM: encoders biased using 1970 potentiometer values
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #6: ECM: encoders biased using 1970 potentiometer values
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #7: ECM: current state ENCODERS_BIASED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #7: ECM: current state ENCODERS_BIASED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #8: ECM: current state POWERING
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #8: ECM: current state POWERING
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #9: ECM: power requested
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #9: ECM: power requested
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #10: IO: ECM watchdog ok
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #10: ECM: power on
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #11: ECM: power on
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #11: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #12: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #12: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #13: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #13: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #14: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #14: ECM: desired state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #15: ECM: desired state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #15: ECM: current state HOMING_ARM
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #16: ECM: current state HOMING_ARM
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #16: ECM: control JOINT_SPACE/TRAJECTORY_MODE
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #17: ECM: control JOINT_SPACE/TRAJECTORY_MODE
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #17: ECM: current state ARM_HOMED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #18: ECM: current state ARM_HOMED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #18: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #19: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #19: ECM: control UNDEFINED_SPACE/UNDEFINED_MODE
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #20: ECM: control UNDEFINED_SPACE/UNDEFINED_MODE
+-W Class mtsPID: ECM-PID:Controller: 1.59113e+09s, #1: ECM-PID: position limit, mask (1 for limit):            0            0            1            0
+-W Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #1: ECM-PID: position limit, mask (1 for limit):            0            0            1            0
+-W Class mtsPID: ECM-PID: position limit, mask (1 for limit):            0            0            1            0, 
+ requested:    -0.491181    -0.229827     0.235000      1.30834, 
+ lower limits:     -1.57080    -0.785398      0.00000     -1.57080, 
+ upper limits:      1.57080      1.13446     0.235000      1.57080
+-W Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #1: ECM: PID position limit
+-W Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #2: ECM: PID position limit
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #20: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #21: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #21: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #22: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #22: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #23: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #23: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #24: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #24: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #25: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #25: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #26: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #26: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #27: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #27: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #28: ECM: current state READY
+-E Class mtsRobotIO1394: io:ECM: 1.59113e+09s, #1: IO: ECM watchdog triggered
+-E Class mtsPID: ECM-PID:Controller: 1.59113e+09s, #1: ECM-PID: received [IO: ECM watchdog triggered]
+-E Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #1: ECM: received [ECM-PID: received [IO: ECM watchdog triggered]]
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #28: ECM: desired state POWERED
+-E Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #2: ECM: detected power loss
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59113e+09s, #29: ECM: current state UNINITIALIZED
+-E Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #1: ECM: received [ECM-PID: received [IO: ECM watchdog triggered]]
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #29: ECM: desired state POWERED
+-E Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #2: ECM: detected power loss
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #30: ECM: current state UNINITIALIZED
+-E Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #3: IO: ECM watchdog triggered
+-E Class mtsIntuitiveResearchKitConsole: console:Main: 1.59113e+09s, #4: ECM-PID: received [IO: ECM watchdog triggered]
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #30: ECM: desired state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #31: ECM: desired state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #31: ECM: current state CALIBRATING_ENCODERS_FROM_POTS
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #32: ECM: current state CALIBRATING_ENCODERS_FROM_POTS
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #32: ECM: encoders have already been calibrated, skipping
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #33: ECM: encoders have already been calibrated, skipping
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #33: ECM: current state ENCODERS_BIASED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #34: ECM: current state ENCODERS_BIASED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #34: ECM: current state POWERING
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #35: ECM: power requested
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #35: ECM: current state POWERING
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #36: ECM: power requested
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #37: IO: ECM watchdog ok
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #36: ECM: power on
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #38: ECM: power on
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #37: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #39: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #38: ECM: current state HOMING_ARM
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #40: ECM: current state HOMING_ARM
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #39: ECM: control JOINT_SPACE/TRAJECTORY_MODE
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #41: ECM: control JOINT_SPACE/TRAJECTORY_MODE
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #40: ECM: current state ARM_HOMED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #42: ECM: current state ARM_HOMED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #41: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #43: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #42: ECM: control UNDEFINED_SPACE/UNDEFINED_MODE
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #44: ECM: control UNDEFINED_SPACE/UNDEFINED_MODE
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #43: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #45: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #44: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #46: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #45: ECM: desired state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #47: ECM: desired state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #46: ECM: current state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #48: ECM: current state UNINITIALIZED
+-E Class mtsRobotIO1394: io:ECM: 1.59114e+09s, #2: IO: ECM watchdog triggered
+-E Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #5: IO: ECM watchdog triggered
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #49: ECM-PID: received [IO: ECM watchdog triggered]
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #47: ECM: desired state POWERED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #50: ECM: desired state POWERED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #48: ECM: current state CALIBRATING_ENCODERS_FROM_POTS
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #49: ECM: encoders have already been calibrated, skipping
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #51: ECM: current state CALIBRATING_ENCODERS_FROM_POTS
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #52: ECM: encoders have already been calibrated, skipping
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #50: ECM: current state ENCODERS_BIASED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #53: ECM: current state ENCODERS_BIASED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #51: ECM: current state POWERING
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #54: ECM: current state POWERING
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #52: ECM: power requested
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #55: ECM: power requested
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #56: IO: ECM watchdog ok
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #53: ECM: power on
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #57: ECM: power on
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #54: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #58: ECM: current state POWERED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #55: ECM: desired state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #59: ECM: desired state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #56: ECM: current state HOMING_ARM
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #57: ECM: control JOINT_SPACE/TRAJECTORY_MODE
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #58: ECM: current state ARM_HOMED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #60: ECM: current state HOMING_ARM
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #61: ECM: control JOINT_SPACE/TRAJECTORY_MODE
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #62: ECM: current state ARM_HOMED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #59: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #63: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #64: ECM: control UNDEFINED_SPACE/UNDEFINED_MODE
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #61: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #65: ECM: current state MANUAL
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #62: ECM: current state READY
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #66: ECM: current state READY
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #63: ECM: desired state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #67: ECM: desired state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #64: ECM: current state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #68: ECM: current state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitECM: ECM:Robot: 1.59114e+09s, #65: ECM: desired state UNINITIALIZED
+-M Class mtsIntuitiveResearchKitConsole: console:Main: 1.59114e+09s, #69: ECM: desired state UNINITIALIZED
+M- Class mtsIntuitiveResearchKitECM: Kill: task "ECM", current state "mtsComponentState
+  State:active"
+M- Class mtsIntuitiveResearchKitArmQtWidget: Kill: default kill method for component "ECM-GUI"
+M- Class mtsIntuitiveResearchKitConsole: Kill: task "console", current state "mtsComponentState
+  State:active"
+M- Class mtsIntuitiveResearchKitConsole: Kill: task "console", current state "mtsComponentState
+  State:active"
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: Kill: default kill method for component "consoleGUI"
+M- Class mtsIntuitiveResearchKitConsoleQtWidget: mtsIntuitiveResearchKitConsoleQtWidget::Cleanup
+M- Class mtsIntuitiveResearchKitConsole: RunInternal: end of task "console"
+M- Class mtsIntuitiveResearchKitConsole: Cleanup
+M- Class mtsIntuitiveResearchKitConsole: Cl Class ternal: ended for task ""
+mtsIntuitiveResearchKitECMe:activ": 
+ECMmtsComponentState
+  State:finished"
+-W Class mtsIntuitiveResearchKitECM: End of task ECM
+ Class mtsROSBridge: End of task sawIntuitiveResearchKitdvrk_spin
+ Class mtsROSBridge: End of task sawIntuitiveResearchKitdvrk_spin
+M- Class mtsIntuitiveResearchKitECM: ECM: Cleanup
+M- Class mtsIntuitiveResearchKitECM: CleanupInternal: ended for task "ECM"
+M- Class mtsIntuitiveResearchKitArmQtWidget: WaitForState: called for component "ECM-GUI" for state "mtsComponentState
+  State:finished" has no effect for mtsComponent
+-W Class mtsRobotIO1394: End of task io
+-W Class mtsROSBridge: End of task sawIntuitiveResearchKitdvrk_tf2
+-W Class mtsROSBridge: End of task sawIntuitiveResearchKitdvrk
+-W Class mtsROSBridge: End of task sawIntuitiveResearchKitdvrk_stats
+E- Class mtsManagerLocal: File: mtsManagerLocal.cpp Line: 2044 -  WaitForStateAll: component "ECM-PID" failed to reach state "mtsComponentState
+  State:finished"
+E- Class mtsManagerLocal: File: mtsManagerLocal.cpp Line: 2052 -  WaitForStateAll: timed out while waiting for state "mtsComponentState
+  State:finished"
+E- Class mtsManagerLocal: File: mtsManagerLocal.cpp Line: 2061 -  WaitForStateAll: failed to reached state "mtsComponentState
+  State:finished" for all components
+M- Class cmnClassRegister: SetLogMaskClassAll: log mask has been set to "  " for the following classes: cmnBool, cmnChar, cmnCommandLineOptions, cmnDeSerializer, cmnDouble, cmnInt, cmnLoggerQtWidget, cmnLong, cmnLongLong, cmnPath, cmnSerializer, cmnShort, cmnUChar, cmnUInt, cmnULong, cmnULongLong, cmnUShort, cmnXMLPath, dvrk_topics_versionProxy, mtsBool, mtsBool1, mtsBool2, mtsBool3, mtsBool4, mtsBool5, mtsBool6, mtsBoolMat, mtsBoolVec, mtsChar, mtsChar1, mtsChar2, mtsChar3, mtsChar4, mtsChar5, mtsChar6, mtsCharMat, mtsCharVec, mtsCollectorEvent, mtsCollectorFactory, mtsCollectorQtComponent, mtsCollectorQtFactory, mtsCollectorState, mtsComponent, mtsComponentAddLatency, mtsComponentConstructorNameAndDouble, mtsComponentConstructorNameAndInt, mtsComponentConstructorNameAndLong, mtsComponentConstructorNameAndString, mtsComponentConstructorNameAndUInt, mtsComponentConstructorNameAndULong, mtsComponentStateChangeProxy, mtsComponentStateProxy, mtsComponentStatusControlProxy, mtsComponentViewer, mtsConnection, mtsDaVinciEndoscopeFocus, mtsDaVinciHeadSensor, mtsDescriptionComponentClassProxy, mtsDescriptionComponentClassVecProxy, mtsDescriptionComponentProxy, mtsDescriptionConnectionProxy, mtsDescriptionConnectionVecProxy, mtsDescriptionInterfaceProxy, mtsDescriptionLoadLibraryProxy, mtsDouble, mtsDouble1, mtsDouble2, mtsDouble3, mtsDouble4, mtsDouble5, mtsDouble6, mtsDoubleAnRot2, mtsDoubleAxAnRot3, mtsDoubleFrm4x4, mtsDoubleMat, mtsDoubleMatFrm3, mtsDoubleMatRot2, mtsDoubleMatRot3, mtsDoubleQuat, mtsDoubleQuatFrm3, mtsDoubleQuatRot3, mtsDoubleRodRot3, mtsDoubleVec, mtsEndUserInterfaceArgProxy, mtsEventHandlerList, mtsExecutionResultProxy, mtsFloat, mtsFloat1, mtsFloat2, mtsFloat3, mtsFloat4, mtsFloat5, mtsFloat6, mtsFloatAnRot2, mtsFloatAxAnRot3, mtsFloatFrm4x4, mtsFloatMat, mtsFloatMatFrm3, mtsFloatMatRot2, mtsFloatMatRot3, mtsFloatQuat, mtsFloatQuatFrm3, mtsFloatQuatRot3, mtsFloatRodRot3, mtsFloatVec, mtsInt, mtsInt1, mtsInt2, mtsInt3, mtsInt4, mtsInt5, mtsInt6, mtsIntMat, mtsIntVec, mtsInterfaceProvided, mtsInterfaceProvidedDescriptionProxy, mtsInterfaceRequired, mtsInterfaceRequiredDescriptionProxy, mtsIntervalStatistics, mtsIntervalStatisticsQtWidgetComponent, mtsIntuitiveResearchKitArm, mtsIntuitiveResearchKitArmQtWidget, mtsIntuitiveResearchKitArmTypesProxy, mtsIntuitiveResearchKitConsole, mtsIntuitiveResearchKitConsoleQt, mtsIntuitiveResearchKitConsoleQtWidget, mtsIntuitiveResearchKitECM, mtsIntuitiveResearchKitMTM, mtsIntuitiveResearchKitPSM, mtsIntuitiveResearchKitSUJ, mtsIntuitiveResearchKitSUJQtWidget, mtsIntuitiveResearchKitUDPStreamer, mtsLogMessage, mtsLong, mtsLongLong, mtsLongMat, mtsLongVec, mtsManagerComponentBase, mtsManagerComponentClient, mtsManagerComponentServer, mtsManagerComponentServices, mtsManagerGlobal, mtsManagerGlobalInterface, mtsManagerLocal, mtsManagerLocalInterface, mtsMessageProxy, mtsMessageQtWidgetComponent, mtsPID, mtsPIDQtWidget, mtsPSMCompensation, mtsQtApplication, mtsQtApplicationConstructorArg, mtsQtWidgetBoolRead, mtsQtWidgetBoolVecRead, mtsQtWidgetBoolVecWrite, mtsQtWidgetBoolWrite, mtsQtWidgetComponent, mtsQtWidgetDoubleRead, mtsQtWidgetDoubleVecRead, mtsQtWidgetDoubleVecWrite, mtsQtWidgetDoubleWrite, mtsQtWidgetEvent, mtsQtWidgetFunction, mtsQtWidgetIntRead, mtsQtWidgetIntWrite, mtsQtWidgetInterfaceRequired, mtsQtWidgetStateIndexRead, mtsQtWidgetStateIndexWrite, mtsQtWidgetStdStringRead, mtsQtWidgetStdStringWrite, mtsROSBridge, mtsRobotIO1394, mtsRobotIO1394QtWidget, mtsRobotIO1394QtWidgetFactory, mtsShort, mtsShortMat, mtsShortVec, mtsSocketBaseQtWidget, mtsSocketClientPSM, mtsSocketProxyClient, mtsSocketProxyClientConstructorArg, mtsSocketProxyInitData, mtsSocketProxyServer, mtsSocketProxyServerConstructorArg, mtsSocketServerPSM, mtsStateIndex, mtsStateTable, mtsStateTableIndexRange, mtsStdCharVecProxy, mtsStdDoubleVecProxy, mtsStdString, mtsStdStringVec, mtsStdStringVecProxy, mtsStdVct3VecProxy, mtsSystemQtWidgetComponent, mtsTask, mtsTaskConstructorArg, mtsTaskConstructorArgProxy, mtsTaskContinuous, mtsTaskContinuousConstructorArg, mtsTaskContinuousConstructorArgProxy, mtsTaskFromCallback, mtsTaskFromCallbackAdapter, mtsTaskFromSignal, mtsTaskMain, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg, mtsTaskPeriodicConstructorArgProxy, mtsTeleOperation, mtsTeleOperationECM, mtsTeleOperationECMQtWidget, mtsTeleOperationPSM, mtsTeleOperationPSMQtWidget, mtsTeleOperationQtWidget, mtsTextToSpeech, mtsUChar, mtsUChar1, mtsUChar2, mtsUChar3, mtsUChar4, mtsUChar5, mtsUChar6, mtsUCharMat, mtsUCharVec, mtsUInt, mtsUInt1, mtsUInt2, mtsUInt3, mtsUInt4, mtsUInt5, mtsUInt6, mtsUIntMat, mtsUIntVec, mtsULong, mtsULongMat, mtsULongVec, mtsUShort, mtsUShortMat, mtsUShortVec, mtsVct1, mtsVct2, mtsVct2x2, mtsVct3, mtsVct3x3, mtsVct4, mtsVct4x4, mtsVct5, mtsVct6, mtsVct7, mtsVct8, mtsVct9, mtsVctBool1, mtsVctBool2, mtsVctBool3, mtsVctBool4, mtsVctBool5, mtsVctBool6, mtsVctBool7, mtsVctBool8, mtsVctBool9, mtsVctBoolVec, mtsVctChar1, mtsVctChar2, mtsVctChar3, mtsVctChar4, mtsVctChar5, mtsVctChar6, mtsVctChar7, mtsVctChar8, mtsVctChar9, mtsVctCharVec, mtsVctDoubleMat, mtsVctDoubleVec, mtsVctFloat1, mtsVctFloat2, mtsVctFloat3, mtsVctFloat4, mtsVctFloat5, mtsVctFloat6, mtsVctFloat7, mtsVctFloat8, mtsVctFloat9, mtsVctFloatMat, mtsVctFloatVec, mtsVctFrm3, mtsVctFrm4x4, mtsVctInt1, mtsVctInt2, mtsVctInt3, mtsVctInt4, mtsVctInt5, mtsVctInt6, mtsVctInt7, mtsVctInt8, mtsVctInt9, mtsVctIntMat, mtsVctIntVec, mtsVctLong1, mtsVctLong2, mtsVctLong3, mtsVctLong4, mtsVctLong5, mtsVctLong6, mtsVctLong7, mtsVctLong8, mtsVctLong9, mtsVctLongVec, mtsVctMatRot3, mtsVctShort1, mtsVctShort2, mtsVctShort3, mtsVctShort4, mtsVctShort5, mtsVctShort6, mtsVctShort7, mtsVctShort8, mtsVctShort9, mtsVctShortVec, mtsVctUChar1, mtsVctUChar2, mtsVctUChar3, mtsVctUChar4, mtsVctUChar5, mtsVctUChar6, mtsVctUChar7, mtsVctUChar8, mtsVctUChar9, mtsVctUCharVec, mtsVctUInt1, mtsVctUInt2, mtsVctUInt3, mtsVctUInt4, mtsVctUInt5, mtsVctUInt6, mtsVctUInt7, mtsVctUInt8, mtsVctUInt9, mtsVctUIntVec, mtsVctULong1, mtsVctULong2, mtsVctULong3, mtsVctULong4, mtsVctULong5, mtsVctULong6, mtsVctULong7, mtsVctULong8, mtsVctULong9, mtsVctULongVec, mtsVctUShort1, mtsVctUShort2, mtsVctUShort3, mtsVctUShort4, mtsVctUShort5, mtsVctUShort6, mtsVctUShort7, mtsVctUShort8, mtsVctUShort9, mtsVctUShortVec, mtsWatchdogClient, mtsWatchdogServer, osaSerialPort, osaSocket, osaSocketServer, osaTimeServer, prmActuatorJointCouplingProxy, prmActuatorParameters, prmActuatorState, prmCartesianImpedanceGains, prmCartesianImpedanceGainsProxy, prmEventButton, prmEventButtonQtWidgetComponent, prmForceCartesianGet, prmForceCartesianSet, prmForceTorqueJointSet, prmGainParameters, prmIMUSensors, prmIMUSensorsProxy, prmInputData, prmInputDataProxy, prmJointTypeProxy, prmKeyValueProxy, prmMaskedBoolVec, prmMaskedCharVec, prmMaskedDoubleVec, prmMaskedFloatVec, prmMaskedIntVec, prmMaskedLongVec, prmMaskedShortVec, prmMaskedUCharVec, prmMaskedUIntVec, prmMaskedULongVec, prmMaskedUShortVec, prmOperatingState, prmOperatingStateProxy, prmPositionCartesianGet, prmPositionCartesianGetProxy, prmPositionCartesianSet, prmPositionJointGet, prmPositionJointGetProxy, prmPositionJointSet, prmPositionJointSetProxy, prmRobotState, prmStateJoint, prmStateJointProxy, prmStateRobotQtWidgetComponent, prmTransformationBase, prmTransformationDynamic, prmTransformationFixed, prmTransformationManager, prmVelocityCartesianGet, prmVelocityCartesianGetProxy, prmVelocityCartesianSet, prmVelocityJointGet, prmVelocityJointSet, socketCommandPSMProxy, socketHeaderProxy, socketMessagesProxy, socketStatePSMProxy, 
+M- Class cmnLogger: SetMaskFunction: function mask set to "  "

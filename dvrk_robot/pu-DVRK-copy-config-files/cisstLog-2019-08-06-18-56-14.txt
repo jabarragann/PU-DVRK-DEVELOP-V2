@@ -1,0 +1,186 @@
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- Class mtsIntuitiveResearchKitConsole: Configure: console using file "console-MTML-PSM1-MTMR-PSM2-Teleop.json"
+----> content of configuration file: 
+{
+	"arms" : 
+	[
+		{
+			"base-frame" : 
+			{
+				"reference-frame" : "ECM",
+				"transform" : 
+				[
+					[
+						1,
+						0,
+						0,
+						-0.20000000000000001
+					],
+					[
+						0,
+						-0.86602540400000005,
+						0.5,
+						0
+					],
+					[
+						0,
+						-0.5,
+						-0.86602540400000005,
+						0
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"io" : "sawRobotIO1394-PSM1-31094_purdue.xml",
+			"kinematic" : "psm-large-needle-driver.json",
+			"name" : "PSM1",
+			"pid" : "sawControllersPID-PSM.xml",
+			"type" : "PSM"
+		},
+		{
+			"base-frame" : 
+			{
+				"reference-frame" : "ECM",
+				"transform" : 
+				[
+					[
+						1,
+						0,
+						0,
+						0.20000000000000001
+					],
+					[
+						0,
+						-0.86602540400000005,
+						0.5,
+						0
+					],
+					[
+						0,
+						-0.5,
+						-0.86602540400000005,
+						0
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"io" : "sawRobotIO1394-PSM2-11251_purdue.xml",
+			"kinematic" : "psm-large-needle-driver.json",
+			"name" : "PSM2",
+			"pid" : "sawControllersPID-PSM.xml",
+			"type" : "PSM"
+		},
+		{
+			"arm" : "MTML-55790.json",
+			"base-frame" : 
+			{
+				"reference-frame" : "HRSV",
+				"transform" : 
+				[
+					[
+						-1,
+						0,
+						0,
+						-0.17999999999999999
+					],
+					[
+						0,
+						0.86602540400000005,
+						0.5,
+						0.40000000000000002
+					],
+					[
+						0,
+						0.5,
+						-0.86602540400000005,
+						0.47499999999999998
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"io" : "sawRobotIO1394-MTMR-55790_purdue.xml",
+			"name" : "MTMR",
+			"pid" : "sawControllersPID-MTMR.xml",
+			"type" : "MTM"
+		},
+		{
+			"arm" : "MTML-79204.json",
+			"base-frame" : 
+			{
+				"reference-frame" : "HRSV",
+				"transform" : 
+				[
+					[
+						-1,
+						0,
+						0,
+						0.17999999999999999
+					],
+					[
+						0,
+						0.86602540400000005,
+						0.5,
+						0.40000000000000002
+					],
+					[
+						0,
+						0.5,
+						-0.86602540400000005,
+						0.47499999999999998
+					],
+					[
+						0,
+						0,
+						0,
+						1
+					]
+				]
+			},
+			"io" : "sawRobotIO1394-MTML-79204_purdue.xml",
+			"name" : "MTML",
+			"pid" : "sawControllersPID-MTML.xml",
+			"type" : "MTM"
+		}
+	],
+	"chatty" : true,
+	"io" : 
+	{
+		"footpedals" : "sawRobotIO1394-MTMR-foot-pedals.xml"
+	},
+	"psm-teleops" : 
+	[
+		{
+			"master" : "MTMR",
+			"slave" : "PSM2"
+		},
+		{
+			"master" : "MTML",
+			"slave" : "PSM1"
+		}
+	]
+}
+<----
+M- Class mtsIntuitiveResearchKitConsole: Configure:
+     - Period IO is 0.0003
+     - FireWire port is 0
+     - Protocol is 1
+     - Watchdog timeout is 0.03
+-W Class cmnPath: Couldn't find file "MTML-55790.json" in path /home/juan/davinci_catkin_ws_1.7/src/cisst-saw/sawIntuitiveResearchKit/share/pu-DVRK;/home/juan/davinci_catkin_ws_1.7/src/cisst-saw/sawIntuitiveResearchKit/share/pu-DVRK;/home/juan/davinci_catkin_ws_1.7/src/cisst-saw/sawIntuitiveResearchKit/components/../share;/home/juan/davinci_catkin_ws_1.7/src/cisst-saw/sawIntuitiveResearchKit/components/../share/io
+E- Class mtsIntuitiveResearchKitConsole: File: mtsIntuitiveResearchKitConsole.cpp Line: 1394 -  ConfigureArmJSON: can't find configuration file MTML-55790.json
+E- Class mtsIntuitiveResearchKitConsole: File: mtsIntuitiveResearchKitConsole.cpp Line: 700 -  Configure: failed to configure arms[2]

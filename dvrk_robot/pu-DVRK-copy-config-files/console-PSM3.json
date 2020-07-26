@@ -1,0 +1,13 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "PSM3",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM3-72369_purdue.xml",
+            "pid": "sawControllersPID-PSM_purdue.xml",
+            "kinematic": "psm-large-needle-driver_purdue.json"
+        }
+    ]
+}
