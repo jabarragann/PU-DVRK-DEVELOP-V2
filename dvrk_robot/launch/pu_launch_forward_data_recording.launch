@@ -1,0 +1,20 @@
+<launch>
+	<!-- create node that will invert the images from the cameras -->
+	<node name="data_recording_launcher" pkg="dvrk_robot" type="forward_data_collection_recording.py" output="screen" args="">
+	    <param name="subject_id" value="$(arg subject_id)"/>
+	    <param name="trial"   value="$(arg trial)"/>
+	</node>
+
+	<!-- display video using simple ros image_view -->
+	<node   name="secondary_task_left_view"
+			pkg="image_view"
+			type="image_view"
+			args="image:=/modified_display_left"/>
+
+	<node   name="secondary_task_right_view"
+			pkg="image_view"
+			type="image_view"
+			args="image:=/modified_display_right"/>
+
+
+</launch>

@@ -1,0 +1,24 @@
+<launch>
+	<!-- create node that will invert the images from the cameras -->
+	<node name="secondary_task_launcher" pkg="dvrk_robot" type="secondary_task.py" output="screen" args="">
+	    <param name="subject_id" value="$(arg subject_id)"/>
+	    <param name="trial"   value="$(arg trial)"/>
+	</node>
+
+	<!-- Swaping arms script -->
+	<node name="swaping_arms" pkg="dvrk_robot" type="swaping_arms.py" output="screen" args="">
+	</node>
+
+	<!-- display video using simple ros image_view -->
+	<node   name="secondary_task_left_view"
+			pkg="image_view"
+			type="image_view"
+			args="image:=/modified_display_left"/>
+
+	<node   name="secondary_task_right_view"
+			pkg="image_view"
+			type="image_view"
+			args="image:=/modified_display_right"/>
+
+
+</launch>

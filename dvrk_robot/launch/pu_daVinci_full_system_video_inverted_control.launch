@@ -1,0 +1,51 @@
+<launch>
+ 
+  <!-- Set this to your camera's name -->
+  <arg name="rig_name" default="pu_dvrk_cam"/>
+  <arg name="left_cam_name" default="$(arg rig_name)_left"/>
+  <arg name="left_cam_device" default="/dev/video0"/>
+  <arg name="left_cam_info" default="package://dvrk_robot/data/$(arg left_cam_name).ini"/>
+  <arg name="right_cam_name" default="$(arg rig_name)_right"/>
+  <arg name="right_cam_device" default="/dev/video1"/>
+  <arg name="right_cam_info" default="package://dvrk_robot/data/$(arg right_cam_name)_right.ini"/>
+  <arg name="rect" default = "true"/>
+
+  <!-- camera driver node -->
+  <include file="$(find dvrk_robot)/launch/gscam_mono.launch" ns="$(arg rig_name)/left">
+    <arg name="cam_name" value="$(arg left_cam_name)"/>
+    <arg name="dev_name" value="$(arg left_cam_device)"/>
+    <arg name="cam_info" value="$(arg left_cam_info)"/>
+    <arg name="rect" value = "$(arg rect)"/>
+  </include>
+
+  <!-- camera driver node -->
+  <include file="$(find dvrk_robot)/launch/gscam_mono.launch" ns="$(arg rig_name)/right">
+    <arg name="cam_name" value="$(arg right_cam_name)"/>
+    <arg name="dev_name" value="$(arg right_cam_device)"/>
+    <arg name="cam_info" value="$(arg right_cam_info)"/>
+    <arg name="rect" value = "$(arg rect)"/>
+  </include>
+
+  <!-- create node that will invert the images from the cameras -->
+  <node name="image_inverter" pkg="dvrk_robot" type="invert_image.py" output="screen" args="">
+        <param name="rig_name" value="$(arg rig_name)" />
+  </node>
+
+  <!-- display video using simple ros image_view 
+  <node name="dvrk_$(arg left_cam_name)_view"
+  pkg="image_view"
+  type="image_view"
+  args="image:=/$(arg rig_name)/left/image_raw"/>
+  <node name="dvrk_$(arg right_cam_name)_view"
+  pkg="image_view"
+  type="image_view"
+  args="image:=/$(arg rig_name)/right/image_raw"/> --> 
+
+  <!-- Start the dVRK console -->
+  <node name="dvrk_node"
+      pkg="dvrk_robot"
+      type="dvrk_console_json"        
+      args="-j $(find dvrk_config)/pu-DVRK/console-ECM-MTML-PSM1-MTMR-PSM2-Teleop.json"                     
+      output="screen"/>
+
+</launch>

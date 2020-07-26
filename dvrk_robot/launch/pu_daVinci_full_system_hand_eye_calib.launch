@@ -1,0 +1,38 @@
+<!-- -*- mode: XML -*- -->
+<!-- Purdue da vinci stereo launch file -->
+
+<launch>
+
+  <!-- launch video stream -->
+  <arg name="rig_name"   default="pu_dvrk_cam"/>
+  
+  <!-- Create cameras -->
+  <include file="$(find video_stream_opencv)/launch/camera.launch" >
+    <arg name="camera_name" value="video0" />
+    <arg name="video_stream_provider" value="0" />
+  </include>
+
+  <include file="$(find video_stream_opencv)/launch/camera.launch" >
+    <arg name="camera_name" value="video1" />
+    <arg name="video_stream_provider" value="1" />
+  </include>
+
+  <!-- create node that will invert the images from the cameras -->
+  <node name="image_inverter" pkg="dvrk_robot" type="invert_image.py" output="screen" args="">
+    <param name="rig_name" value="$(arg rig_name)" />
+  </node>
+
+  <!-- create recording node -->
+  <node name="recording_node" pkg="dvrk_robot" type="hand_eye_calibration_data.py" output="screen" args="">
+      <param name="subject_id" value="$(arg subject_id)"/>
+      <param name="rig_name" value="$(arg rig_name)" />
+  </node>
+  
+  <!-- Start the dVRK console -->
+  <node name="dvrk_node"
+  pkg="dvrk_robot"
+  type="dvrk_console_json"        
+  args="-j $(find dvrk_config)/pu-DVRK/console-ECM-MTML-MTMR-PSM1-PSM2-PSM3-Teleop.json"                     
+  output="screen"/> 
+
+</launch>

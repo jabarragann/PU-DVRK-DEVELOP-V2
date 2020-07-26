@@ -8,7 +8,7 @@
   <node name="dvrk_$(arg arm)_node"
         pkg="dvrk_robot"
         type="dvrk_console_json"        
-        args="-j $(arg config)"                     
+        args="-j $(find dvrk_config)/$(arg config)"                     
         output="screen"/>
 
   <group ns="/dvrk/$(arg arm)">
