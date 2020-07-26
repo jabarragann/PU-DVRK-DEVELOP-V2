@@ -156,8 +156,7 @@ class secondary_task_module:
 		publisher = self.image_pub1 if publisherId == 1 else self.image_pub2
 		compressedPublisher = self.image_pub1_compressed if publisherId == 1 else self.image_pub2_compressed
 		
-
-		#Set recording indicator
+		
 		if self.recording:
 			color = (0,255,0)
 		else:
@@ -165,10 +164,29 @@ class secondary_task_module:
 
 		#Modify Image
 		if True:
+			#########################
+			#Add recording indicator#
+			#########################
 			overlay = cv_image.copy()
 						
 			cv2.rectangle(cv_image, (600, 0), (640,40), color, -1)
 			cv2.addWeighted(overlay, self.alpha, cv_image, 1 - self.alpha, 0, cv_image)
+
+			############################
+			##Add chess board corners###
+			############################
+			gray = cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
+			# Find the chess board corners
+			ret, corners = cv2.findChessboardCorners(gray, (8,6),None)
+			# If found, add object points, image points (after refining them)
+			if ret == True:
+				criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+				# self.objpoints.append(objp) # Object points
+				corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
+				# imgpoints.append(corners2)
+				# Draw and display the corners
+				cv_image = cv2.drawChessboardCorners(cv_image, (8,6), corners2,ret)
 
 		#Publish modified Image
 		try:
@@ -268,7 +286,7 @@ def main():
 		subject_id = "test"
 		rig_name = "default_cam"
 
-	dst_path = "/home/isat/juanantonio/da_vinci_video_recordings/realtime_project"
+	dst_path = "/home/isat/juanantonio/da_vinci_video_recordings/hand-eye_calibration"
 
 	print("Starting Da vinci video Operation...")
 	
