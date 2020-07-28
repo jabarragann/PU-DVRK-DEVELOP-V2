@@ -1,15 +1,22 @@
 #!/usr/bin/env python
+
+#Ros libraries
 import rospy
-from std_msgs.msg import Int32
-import cv2 
 from cv_bridge import CvBridge, CvBridgeError
+#Ros messages
+from std_msgs.msg import Int32
 from sensor_msgs.msg import Image
-import time
-import datetime
-import numpy as np 
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String as rosString
+from sensor_msgs.msg import JointState
+from geometry_msgs.msg import PoseStamped
+#Python libraries
+import cv2 
+import time
+import datetime
+import numpy as np 
+import sys
 import random 
 import argparse
 import json
@@ -17,150 +24,64 @@ import socket
 import os
 
 
-class secondary_task_module:
+class hand_eye_collection_module:
 
-	def __init__(self,totalTime =1, secondaryTime = 5, file= None, videoFileName = None, userId = None, trialId= None, dst_path = None, rig_name=None):
+	def __init__(self, userId = None, dst_path = None, rig_name=None):
 
-		#Important variables
-		self.initTime = time.time()
-		self.secondaryTime = secondaryTime
-		self.turnSecondaryTask = True
-		self.lastActivation = -1
-		self.startProcedure = False
-		self.stopProcedure = False
-		self.totalTime = totalTime*60 #In seconds
-		self.client = None
-		self.maxPossibleScore = (secondaryTime % 10)*2 * totalTime/2
-		self.score = 0
-		self.correct = 0
-		self.incorrect = 0 
-
-		#Initialize recording variables
-		self.recording = False
-		self.dst_path = dst_path + '/' + createTimeStamp() + userId 
+		##Init files
+		self.dst_path = dst_path + '/' + self.createTimeStamp() + userId + "/"
 		os.mkdir(self.dst_path)
+		self.cartesian_file = open(self.dst_path + "cartesian.txt","w")
+		self.cartesian_local_file = open(self.dst_path + "cartesian_local.txt","w")
+		self.cartesian_file.write("idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n")        
+		self.cartesian_local_file.write("idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n")
 
-
-		self.left_recording_name = ""
-		self.right_recording_name = ""
-		self.left_video = None
-		self.right_video = None
-
-		self.is_recording_time = False
-		self.fourcc = cv2.VideoWriter_fourcc(*'XVID')
-		self.frame = None
-
-		#Create file to write timestamp of each frame
-		self.frames_time_file = open(dst_path + "/test.avi"+".txt",'w')
-		self.frame_counter = 0
-		self.frames_time_file.write("frame,timestamp\n")
-		
-		#New Published topics
-		self.image_pub1 = rospy.Publisher("/"+rig_name+"/modified_display_left",Image, queue_size=5)
-		self.image_pub2 = rospy.Publisher("/"+rig_name+"/modified_display_right",Image, queue_size=5)
-		self.score_pub = rospy.Publisher("score_correctly", Joy, queue_size=5)
-		
-		self.image_pub1_compressed = rospy.Publisher("/"+rig_name+"/modified_display_left/compressed" ,CompressedImage, queue_size=5)
-		self.image_pub2_compressed = rospy.Publisher("/"+rig_name+"/modified_display_right/compressed",CompressedImage, queue_size=5)
+		#Init important variables
+		self.save_frames_and_kinematics = False
+		self.bicoag_count = 0
+		self.left_frame = None
+		self.right_frame = None
 		self.bridge = CvBridge()
-		
-		#Subscribed topics
-		#Topic to Record Video
-		self.camera_left_stream_subs = rospy.Subscriber("/"+rig_name+"/modified_display_left/", Image, self.left_video_recording_callback,  queue_size = 1)
-		self.camera_right_stream_subs = rospy.Subscriber("/"+rig_name+"/modified_display_right/", Image, self.right_video_recording_callback,  queue_size = 1)
 
+		#Font variables
+		self.font = cv2.FONT_HERSHEY_SIMPLEX 
+		self.fontSize = 1.0
+		self.color = (0,255,0)
+		self.thickness = 1
+		self.alpha = 0.8
+
+		#############
+		#Subscribers#
+		#############
+
+		##Pedal 
+		self.camera_pedal_sub = rospy.Subscriber("/dvrk/footpedals/bicoag", Joy, self.pedal_callback)
+
+		##ECM Kinematics
+		self.ecm_cartesian_subs = rospy.Subscriber("/dvrk/ECM/position_cartesian_current", PoseStamped, self.ecm_cartesian_callback)
+		self.ecm_cartesian_subs = rospy.Subscriber("/dvrk/ECM/position_cartesian_local_current", PoseStamped, self.ecm_cartesian_local_callback)
+		self.ecm_joints_subs = rospy.Subscriber("/dvrk/ECM/state_joint_current", JointState, self.ecm_joints_callback)
+
+		##Video
 		self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.left_callback)
 		self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.right_callback)
-		self.camera_pedal_sub = rospy.Subscriber("/dvrk/footpedals/bicoag", Joy, self.pedal_callback)
-		self.score_sub = rospy.Subscriber("score_correctly",Joy, self.score_callback)
 
-		self.misalignment = 75
-		self.fontSize = 1.2
-		self.message =  ""
-		self.timerStr = ""
-		self.scoreStr = ""
-		self.alpha = 0.8
-		self.numberOfTargets = 2
-		self.target = random.sample(range(min(secondaryTime,10)), self.numberOfTargets)
+		############
+		#Publishers#
+		############
 
-
-		#Blink a green/red rectangle on screen to indicate the user the secondary task is starting
-		self.notifyUser= False
-		self.notificationColor = (0,0,0)
-
-		#Kernel used to blurr images when secondary task is active
-		self.smoothingKernel = np.ones((5,5),np.float32)/25
-
-		#File to write timestamps
-		self.file = file
+		##Modified displays + compressed
+		self.image_pub1 = rospy.Publisher("/"+rig_name+"/modified_display_left",Image, queue_size=5)
+		self.image_pub2 = rospy.Publisher("/"+rig_name+"/modified_display_right",Image, queue_size=5)
+		self.image_pub1_compressed = rospy.Publisher("/"+rig_name+"/modified_display_left/compressed" ,CompressedImage, queue_size=5)
+		self.image_pub2_compressed = rospy.Publisher("/"+rig_name+"/modified_display_right/compressed",CompressedImage, queue_size=5)
 
 
-	def update(self):
-		
-		if self.startProcedure and not self.stopProcedure:
-			currentTime = time.time()
-			secondsCounter = int((currentTime - self.initTime))
-			seconds = secondsCounter % 60
-			minutes = int(secondsCounter / 60)
-			self.timerStr = "Timer: {:02d}:{:02d}".format(minutes,seconds)
+	def modifyImageAndPublish(self,cv_image_orig, publisherId=1):
 
-			#Check if procedure is already over.
-			if time.time() - self.initTime > self.totalTime:
-				secondaryTaskStatus = "finished"
-
-				#Writing to file
-				self.file.write("{:.9f} {}\n".format(time.time(), secondaryTaskStatus))
-				self.file.write("##DATA##\n")
-				self.file.write("{} {}\n".format("Score", self.score))
-				self.file.write("{} {:.3f}\n".format("Max possible Score", float(self.maxPossibleScore) ))
-				#self.file.write("{} {:.3f}\n".format("Accuracy", float(self.score/self.maxPossibleScore) ))
-				self.file.write("{} {}\n".format("Incorrect", self.incorrect))
-				self.file.write("{} {}\n".format("Correct", self.correct))
-				self.file.flush()
-
-				self.stopProcedure = True
-				self.alpha = 0.9
-
-				#Stop recording
-				self.is_recording_time = False
-				self.out.release()
-
-				self.message = "Procedure finished"
-			#If the procedure have not finished, check if the status of the secondary task have to change
-			elif secondsCounter % self.secondaryTime == 0:
-				if secondsCounter != self.lastActivation:
-					self.turnSecondaryTask = not self.turnSecondaryTask
-					self.target = random.sample(range(1,min(self.secondaryTime,10)), self.numberOfTargets)
-					
-					self.lastActivation = secondsCounter
-					secondaryTaskStatus = "active" if self.turnSecondaryTask else "not_active"
-
-					#Writing to file
-					self.file.write("{:.9f} {}\n".format(time.time(), secondaryTaskStatus))
-					self.file.flush()
-
-					if self.turnSecondaryTask:
-						temp = " ".join(map(str,self.target))
-						self.message  = "Do secondary, Targets: {:s}".format(temp)
-						self.scoreStr = "Score: {:3d}".format(self.score)
-						self.alpha = 0.20
-						
-					else:
-						self.message  = "Do only primary task"
-						self.scoreStr = "Score: {:3d}".format(self.score)
-						self.alpha = 0.20
-					
-
-	def modifyImageAndPublish(self,cv_image, misalignment=0, publisherId=1):
-
+		cv_image = cv_image_orig.copy()
 		publisher = self.image_pub1 if publisherId == 1 else self.image_pub2
 		compressedPublisher = self.image_pub1_compressed if publisherId == 1 else self.image_pub2_compressed
-		
-		
-		if self.recording:
-			color = (0,255,0)
-		else:
-			color = (0,0,255)
 
 		#Modify Image
 		if True:
@@ -168,25 +89,26 @@ class secondary_task_module:
 			#Add recording indicator#
 			#########################
 			overlay = cv_image.copy()
-						
-			cv2.rectangle(cv_image, (600, 0), (640,40), color, -1)
+			overlay = cv2.putText(overlay, '{:03d}'.format(self.bicoag_count), (0,25), self.font, self.fontSize, self.color, self.thickness, cv2.LINE_AA)
+			cv2.rectangle(cv_image, (600, 0), (640,40), self.color, -1)
 			cv2.addWeighted(overlay, self.alpha, cv_image, 1 - self.alpha, 0, cv_image)
 
 			############################
 			##Add chess board corners###
 			############################
-			gray = cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
-			# Find the chess board corners
-			ret, corners = cv2.findChessboardCorners(gray, (8,6),None)
-			# If found, add object points, image points (after refining them)
-			if ret == True:
-				criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-				# self.objpoints.append(objp) # Object points
-				corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
-				# imgpoints.append(corners2)
-				# Draw and display the corners
-				cv_image = cv2.drawChessboardCorners(cv_image, (8,6), corners2,ret)
+			# gray = cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
+			# # Find the chess board corners
+			# ret, corners = cv2.findChessboardCorners(gray, (8,6),None)
+			# # If found, add object points, image points (after refining them)
+			# if ret == True:
+			# 	criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+			# 	# self.objpoints.append(objp) # Object points
+			# 	corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
+			# 	# imgpoints.append(corners2)
+			# 	# Draw and display the corners
+			# 	cv_image = cv2.drawChessboardCorners(cv_image, (8,6), corners2,ret)
 
 		#Publish modified Image
 		try:
@@ -205,114 +127,150 @@ class secondary_task_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
+			self.left_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
 
-		self.modifyImageAndPublish(cv_image, misalignment=0, publisherId=1)
+		self.modifyImageAndPublish(cv_image, publisherId=1)
 
 	def right_callback(self,data):
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
+			self.right_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
 
-		self.modifyImageAndPublish(cv_image, misalignment=self.misalignment, publisherId=2)
-	
+		self.modifyImageAndPublish(cv_image, publisherId=2)
+
 	def pedal_callback(self,data):
-		
-		if data.buttons[0]: 
-			#If recording, stop recording
-			if self.recording:
-				print("Stop recording")
-				self.recording = False
-
-				time.sleep(0.2)
-				self.left_video.release()
-				self.right_video.release()
-			#If not recording start recording
-			else:
-				print("Start recording")
-				
-				timestamp =  createTimeStamp()
-				self.left_video = cv2.VideoWriter(self.dst_path + "/" + timestamp + "_left.avi", self.fourcc, 30.0, (640,480))
-				self.right_video = cv2.VideoWriter(self.dst_path + "/" + timestamp + "_right.avi", self.fourcc, 30.0, (640,480))
-
-				self.frames_time_file_left  = open(self.dst_path + "/" + timestamp + "_left_timestamps.txt","w")
-				self.frames_time_file_right = open(self.dst_path + "/" + timestamp + "_right_timestamps.txt","w")
-				self.frame_counter_left = 0
-				self.frame_counter_right = 0
-
-				self.recording = True
-				
-
-	def score_callback(self,data):
-		
-		self.notificationColor = (0,255,0) if data.header.frame_id == "right" else (0,0,255)
-		
 		if data.buttons[0]:
-			self.notifyUser = True
-			time.sleep(0.4)
-			self.notifyUser = False
+			self.save_frames_and_kinematics = True
+			self.bicoag_count += 1
+			print("bicoag pressed count: %i, Recording..." % self.bicoag_count)
 
-	def left_video_recording_callback(self, videoFrame):
-		tempFrame = None
-		cv_image = self.bridge.imgmsg_to_cv2(videoFrame,"bgr8")
-		if self.recording:	
-			
-			self.left_video.write(cv_image)
 
-			self.frame_counter_left += 1
-			self.frames_time_file_left.write("{:d},{:}\n".format(self.frame_counter_left,str(rospy.Time.now())))
-	
-	def right_video_recording_callback(self, videoFrame):
-		tempFrame = None
-		cv_image = self.bridge.imgmsg_to_cv2(videoFrame,"bgr8")
-		if self.recording:	
-			
-			self.right_video.write(cv_image)
+	#ECM callbacks
+	def ecm_cartesian_callback(self, data):
+		self.x_ecm = data.pose.position.x
+		self.y_ecm = data.pose.position.y
+		self.z_ecm = data.pose.position.z
 
-			self.frame_counter_right += 1
-			self.frames_time_file_right.write("{:d},{:}\n".format(self.frame_counter_right,str(rospy.Time.now())))
+		self.rx_ecm = data.pose.orientation.x
+		self.ry_ecm = data.pose.orientation.y
+		self.rz_ecm = data.pose.orientation.z
+		self.rw_ecm= data.pose.orientation.w
+
+		if self.save_frames_and_kinematics:
+			self.saving_frame_kinematic()
+			self.save_frames_and_kinematics = False
+
+
+	def ecm_cartesian_local_callback(self, data):
+		self.x_local_ecm = data.pose.position.x
+		self.y_local_ecm = data.pose.position.y
+		self.z_local_ecm = data.pose.position.z
+
+		self.rx_local_ecm = data.pose.orientation.x
+		self.ry_local_ecm = data.pose.orientation.y
+		self.rz_local_ecm = data.pose.orientation.z
+		self.rw_local_ecm = data.pose.orientation.w
+
+	def ecm_joints_callback(self, data):
+		self.joints_ecm = data.position
+
+	def saving_frame_kinematic(self):
+
+		joints = ",".join(["{: 0.8f}".format(joint_i) for joint_i in self.joints_ecm])
+		#Save cartesian + joints
+		message1 = "{:03d},".format(self.bicoag_count)
+		message1 += "{: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, "\
+		.format(self.rx_ecm, self.ry_ecm,self.rz_ecm,self.rw_ecm,
+			self.x_ecm,self.y_ecm,self.z_ecm)
+		message1 += joints
+		message1 += ",\n"
+		self.cartesian_file.write(message1)
+		self.cartesian_file.flush()
+		#Save cartesian local + joints
+		message2 = "{:03d},".format(self.bicoag_count)
+		message2 += "{: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, "\
+		.format(self.rx_local_ecm, self.ry_local_ecm,self.rz_local_ecm,self.rw_local_ecm,
+			self.x_local_ecm,self.y_local_ecm,self.z_local_ecm)
+		message2 += joints
+		message2 += ",\n"
+		self.cartesian_local_file.write(message2)
+		self.cartesian_local_file.flush()
+		#Save frames
+		cv2.imwrite(self.dst_path + "left_{:03d}.png".format(self.bicoag_count), self.left_frame) #Left
+		cv2.imwrite(self.dst_path + "right_{:03d}.png".format(self.bicoag_count), self.right_frame) #Right
+
+
+	def createTimeStamp(self):
+		ts = time.time()
+		return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%Hh.%Mm.%Ss_')
+
+	def close_files(self):
+		print("Flushing info and closing files.")
+		self.cartesian_local_file.flush()
+		self.cartesian_local_file.close()
+		self.cartesian_file.flush()
+		self.cartesian_file.close()
+
+
 
 def main():
-
 	#Get rospy parameters
-	if rospy.has_param('/recording_node/subject_id') and  rospy.has_param('/recording_node/rig_name'):
-		subject_id = rospy.get_param('/recording_node/subject_id')
-		rig_name   = rospy.get_param('/recording_node/rig_name')
+	if rospy.has_param('/image_inverter/rig_name'):
+		rig_name   = rospy.get_param('/image_inverter/rig_name')
 	else:
-		print("Subject Id or trial was not specified")
-		subject_id = "test"
+		print("rig_name was not specified")
 		rig_name = "default_cam"
+
+
+	# allParams = rospy.get_param_names()
+	# for i in allParams:
+	# 	print(i)
+
+	# myargv = rospy.myargv(argv=sys.argv)
+
+
+
+	##############################
+	###     PARSE ARGS         ###
+	##############################
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-i', action="store", dest="collection_id", required=True, help="Collection id, example: S3")
+
+	args = parser.parse_args()
+	collection_id = args.collection_id
+
+
+	#Temp 
+	rig_name = "pu_dvrk_cam"
+	subject_id = "test"
 
 	dst_path = "/home/isat/juanantonio/da_vinci_video_recordings/hand-eye_calibration"
 
 	print("Starting Da vinci video Operation...")
-	
-	ic = secondary_task_module(file=file, secondaryTime = 30, totalTime = 6, userId = subject_id, dst_path = dst_path, rig_name=rig_name)
-	
+
+	cm = hand_eye_collection_module(userId = collection_id, dst_path = dst_path, rig_name=rig_name)
+
 	#Sleep until the subscribers are ready.
 	time.sleep(0.10)
-	
+
 	try:
 		while not rospy.core.is_shutdown():
-			# ic.update()
 			rospy.rostime.wallsleep(0.25)
 
 	except KeyboardInterrupt:
 		print("Shutting down")
 
 	finally:
+		cm.close_files()
 		print("Shutting down")
 
 
-def createTimeStamp():
-	ts = time.time()
-	return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%Hh.%Mm.%Ss_')
-
-
 if __name__ == '__main__':
-	
+
 	rospy.init_node('recording_node')
 	main()

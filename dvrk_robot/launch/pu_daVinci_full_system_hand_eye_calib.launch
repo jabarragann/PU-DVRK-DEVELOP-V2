@@ -1,6 +1,12 @@
 <!-- -*- mode: XML -*- -->
 <!-- Purdue da vinci stereo launch file -->
 
+<!-- 
+Launch file for collection of video and kinematic data for the
+hand-eye calibration procedure. (i.e. Finding transformation between 
+the camera frame and the end-effector of the ECM arm.)
+-->
+
 <launch>
 
   <!-- launch video stream -->
@@ -22,11 +28,11 @@
     <param name="rig_name" value="$(arg rig_name)" />
   </node>
 
-  <!-- create recording node -->
+  <!-- create recording node 
   <node name="recording_node" pkg="dvrk_robot" type="hand_eye_calibration_data.py" output="screen" args="">
       <param name="subject_id" value="$(arg subject_id)"/>
       <param name="rig_name" value="$(arg rig_name)" />
-  </node>
+  </node> -->
   
   <!-- Start the dVRK console -->
   <node name="dvrk_node"
