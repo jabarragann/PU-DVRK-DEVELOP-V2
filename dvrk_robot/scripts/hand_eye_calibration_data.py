@@ -22,6 +22,7 @@ import argparse
 import json
 import socket
 import os
+from os.path import join, exists
 
 #Inconsistency between files headers and the order in which data was written.
 #It should be already been fix but keep this in case you run into errors.
@@ -61,13 +62,13 @@ class hand_eye_collection_module:
 
 		def save_to_file(self, idx):
 			
-			message1 = self.create_str_repr(idx)
+			message1 = self.create_str_repr(rospy.Time.now(), idx)
 			self.file.write(message1)
 			self.file.flush()
 
-		def create_str_repr(self,idx,):
+		def create_str_repr(self,ts,idx,):
 			#File header ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6 --> (ts, translation, rotation, joints)
-			message1 =  "{:},".format(rospy.Time.now())
+			message1 =  "{:},".format(ts)
 			message1 += "{:d},".format(idx)
 			message1 += "{: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, "\
 						.format(self.x, self.y,self.z,self.rx,
@@ -90,15 +91,16 @@ class hand_eye_collection_module:
 
 		#Create kinematic data structures
 		header = "ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n"
-		self.ecm_cartesian_kin = ArmKinematic(arm_name='ecm_cart', number_of_joints=4, has_gripper=False, 
-											file_path= open(self.dst_path + "cartesian.txt","w"), 
+		self.ecm_cartesian_kin = self.ArmKinematic(arm_name='ecm_cart', number_of_joints=4, has_gripper=False, 
+											file_path= self.dst_path + "cartesian.txt", 
 											file_header=header)
 		
-		self.ecm_cartesian_local_kin = ArmKinematic(arm_name='ecm_cart_local', number_of_joints=4, has_gripper=False, 
-											file_path= open(self.dst_path + "cartesian_local.txt","w"), 
+		self.ecm_cartesian_local_kin = self.ArmKinematic(arm_name='ecm_cart_local', number_of_joints=4, has_gripper=False, 
+											file_path= self.dst_path + "cartesian_local.txt",
 											file_header=header)
 
 		#Video files
+		fourcc = cv2.VideoWriter_fourcc(*'XVID')
 		self.out_left = cv2.VideoWriter(join(self.dst_path,"video_left_color.avi"),fourcc, 30.0, (640,480))
 		self.out_right = cv2.VideoWriter(join(self.dst_path,"video_right_color.avi"),fourcc, 30.0, (640,480))
 		#Write video ts and ECM kinematics
@@ -207,7 +209,7 @@ class hand_eye_collection_module:
 		self.left_frame_count += 1
 
 		#Save kinematics and frame to video
-		message = self.ecm_cartesian_kin.create_str_repr()
+		message = self.ecm_cartesian_kin.create_str_repr(ts=rospy.Time.now(),idx=self.left_frame_count)
 		self.out_left.write(cv_image)
 		self.out_left_ts.write(message)
 
@@ -225,7 +227,7 @@ class hand_eye_collection_module:
 		self.right_frame_count += 1
 
 		#Save kinematics and frame to video
-		message = self.ecm_cartesian_kin.create_str_repr()
+		message = self.ecm_cartesian_kin.create_str_repr(ts=rospy.Time.now(),idx=self.right_frame_count)
 		self.out_right.write(cv_image)
 		self.out_right_ts.write(message)
 
@@ -250,7 +252,8 @@ class hand_eye_collection_module:
 		self.ecm_cartesian_local_kin.set_pose(data)
 
 	def ecm_joints_callback(self, data):
-		self.joints_ecm = data.position
+		self.ecm_cartesian_local_kin.set_joints(data.position)
+		self.ecm_cartesian_kin.set_joints(data.position)
 
 	def saving_frame_kinematic(self):
 		#Save kinematics
@@ -266,11 +269,9 @@ class hand_eye_collection_module:
 
 	def close_files(self):
 		print("Flushing info and closing files.")
-		self.cartesian_local_file.flush()
-		self.cartesian_local_file.close()
-		self.cartesian_file.flush()
-		self.cartesian_file.close()
-
+		self.ecm_cartesian_kin.close_file()
+		self.ecm_cartesian_local_kin.close_file()
+		
 
 
 def main():
