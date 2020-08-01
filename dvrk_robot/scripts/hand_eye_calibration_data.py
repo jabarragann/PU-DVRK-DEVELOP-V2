@@ -23,24 +23,96 @@ import json
 import socket
 import os
 
+#Inconsistency between files headers and the order in which data was written.
 
 class hand_eye_collection_module:
+
+	class ArmKinematic:
+		def __init__(self, arm_name, number_of_joints, has_gripper, file_path, file_header):
+			self.arm_name = arm_name
+			self.x = 0
+			self.y = 0
+			self.z = 0
+			self.rx = 0
+			self.ry = 0
+			self.rz = 0
+			self.rw = 0
+			self.joints = np.zeros(number_of_joints) #NOt counting the gripper.
+
+			self.file = open(file_path,'w')
+			self.file.write(file_header)
+
+			if has_gripper:
+				self.gripper = 0
+
+		def set_joints(self,joints):
+			self.joints[:] = joints 
+
+		def set_pose(self, data):
+			self.x = data.pose.position.x
+			self.y = data.pose.position.y
+			self.z = data.pose.position.z
+
+			self.rx = data.pose.orientation.x
+			self.ry = data.pose.orientation.y
+			self.rz = data.pose.orientation.z
+			self.rw = data.pose.orientation.w
+
+		def save_to_file(self, idx):
+			
+			message1 = self.create_str_repr(idx)
+			self.file.write(message1)
+			self.file.flush()
+
+		def create_str_repr(self,idx,):
+			#File header ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6 --> (ts, translation, rotation, joints)
+			message1 =  "{:},".format(rospy.Time.now())
+			message1 += "{:d},".format(idx)
+			message1 += "{: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, {: 0.8f}, "\
+						.format(self.x, self.y,self.z,self.rx,
+							self.ry,self.rz,self.rw)
+			joints = ",".join(["{: 0.8f}".format(joint_i) for joint_i in self.joints])
+			message1 += joints
+			message1 += ",\n"
+
+			return message1 
+
+		def close_file(self,):
+			self.file.flush()
+			self.file.close()
 
 	def __init__(self, userId = None, dst_path = None, rig_name=None):
 
 		##Init files
 		self.dst_path = dst_path + '/' + self.createTimeStamp() + userId + "/"
 		os.mkdir(self.dst_path)
-		self.cartesian_file = open(self.dst_path + "cartesian.txt","w")
-		self.cartesian_local_file = open(self.dst_path + "cartesian_local.txt","w")
-		self.cartesian_file.write("idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n")        
-		self.cartesian_local_file.write("idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n")
+
+		#Create kinematic data structures
+		header = "ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n"
+		self.ecm_cartesian_kin = ArmKinematic(arm_name='ecm_cart', number_of_joints=4, has_gripper=False, 
+											file_path= open(self.dst_path + "cartesian.txt","w"), 
+											file_header=header)
+		
+		self.ecm_cartesian_local_kin = ArmKinematic(arm_name='ecm_cart_local', number_of_joints=4, has_gripper=False, 
+											file_path= open(self.dst_path + "cartesian_local.txt","w"), 
+											file_header=header)
+
+		#Video files
+		self.out_left = cv2.VideoWriter(join(self.dst_path,"video_left_color.avi"),fourcc, 30.0, (640,480))
+		self.out_right = cv2.VideoWriter(join(self.dst_path,"video_right_color.avi"),fourcc, 30.0, (640,480))
+		#Write video ts and ECM kinematics
+		self.out_left_ts = open(join(self.dst_path, "video_left_color_ts.txt"),'w')
+		self.out_left_ts.write(header)
+		self.out_right_ts = open(join(self.dst_path,"video_right_color_ts.txt"),'w')
+		self.out_right_ts.write(header)
 
 		#Init important variables
 		self.save_frames_and_kinematics = False
 		self.bicoag_count = 0
 		self.left_frame = None
+		self.left_frame_count = 0
 		self.right_frame = None
+		self.right_frame_count = 0
 		self.bridge = CvBridge()
 
 		#Font variables
@@ -131,6 +203,14 @@ class hand_eye_collection_module:
 		except CvBridgeError as e:
 			print(e)
 
+		self.left_frame_count += 1
+
+		#Save kinematics and frame to video
+		message = self.ecm_cartesian_kin.create_str_repr()
+		self.out_left.write(cv_image)
+		self.out_left_ts.write(message)
+
+		#Modify image for display
 		self.modifyImageAndPublish(cv_image, publisherId=1)
 
 	def right_callback(self,data):
@@ -141,6 +221,14 @@ class hand_eye_collection_module:
 		except CvBridgeError as e:
 			print(e)
 
+		self.right_frame_count += 1
+
+		#Save kinematics and frame to video
+		message = self.ecm_cartesian_kin.create_str_repr()
+		self.out_right.write(cv_image)
+		self.out_right_ts.write(message)
+
+		#Modify image for display
 		self.modifyImageAndPublish(cv_image, publisherId=2)
 
 	def pedal_callback(self,data):
@@ -152,14 +240,15 @@ class hand_eye_collection_module:
 
 	#ECM callbacks
 	def ecm_cartesian_callback(self, data):
-		self.x_ecm = data.pose.position.x
-		self.y_ecm = data.pose.position.y
-		self.z_ecm = data.pose.position.z
 
-		self.rx_ecm = data.pose.orientation.x
-		self.ry_ecm = data.pose.orientation.y
-		self.rz_ecm = data.pose.orientation.z
-		self.rw_ecm= data.pose.orientation.w
+		self.ecm_cartesian_kin.x = data.pose.position.x
+		self.ecm_cartesian_kin.y = data.pose.position.y
+		self.ecm_cartesian_kin.z = data.pose.position.z
+
+		self.ecm_cartesian_kin.rx = data.pose.orientation.x
+		self.ecm_cartesian_kin.ry = data.pose.orientation.y
+		self.ecm_cartesian_kin.rz = data.pose.orientation.z
+		self.ecm_cartesian_kin.rw = data.pose.orientation.w
 
 		if self.save_frames_and_kinematics:
 			self.saving_frame_kinematic()
@@ -167,43 +256,27 @@ class hand_eye_collection_module:
 
 
 	def ecm_cartesian_local_callback(self, data):
-		self.x_local_ecm = data.pose.position.x
-		self.y_local_ecm = data.pose.position.y
-		self.z_local_ecm = data.pose.position.z
+		
+		self.ecm_cartesian_local_kin.x = data.pose.position.x
+		self.ecm_cartesian_local_kin.y = data.pose.position.y
+		self.ecm_cartesian_local_kin.z = data.pose.position.z
 
-		self.rx_local_ecm = data.pose.orientation.x
-		self.ry_local_ecm = data.pose.orientation.y
-		self.rz_local_ecm = data.pose.orientation.z
-		self.rw_local_ecm = data.pose.orientation.w
+		self.ecm_cartesian_local_kin.rx = data.pose.orientation.x
+		self.ecm_cartesian_local_kin.ry = data.pose.orientation.y
+		self.ecm_cartesian_local_kin.rz = data.pose.orientation.z
+		self.ecm_cartesian_local_kin.rw = data.pose.orientation.w
 
 	def ecm_joints_callback(self, data):
 		self.joints_ecm = data.position
 
 	def saving_frame_kinematic(self):
 
-		joints = ",".join(["{: 0.8f}".format(joint_i) for joint_i in self.joints_ecm])
-		#Save cartesian + joints
-		message1 = "{:03d},".format(self.bicoag_count)
-		message1 += "{: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, "\
-		.format(self.rx_ecm, self.ry_ecm,self.rz_ecm,self.rw_ecm,
-			self.x_ecm,self.y_ecm,self.z_ecm)
-		message1 += joints
-		message1 += ",\n"
-		self.cartesian_file.write(message1)
-		self.cartesian_file.flush()
-		#Save cartesian local + joints
-		message2 = "{:03d},".format(self.bicoag_count)
-		message2 += "{: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, "\
-		.format(self.rx_local_ecm, self.ry_local_ecm,self.rz_local_ecm,self.rw_local_ecm,
-			self.x_local_ecm,self.y_local_ecm,self.z_local_ecm)
-		message2 += joints
-		message2 += ",\n"
-		self.cartesian_local_file.write(message2)
-		self.cartesian_local_file.flush()
+		#Save kinematics
+		self.ecm_cartesian_kin.save_to_file(idx=self.bicoag_count)
+		self.ecm_cartesian_local_kin.save_to_file (idx=self.bicoag_count)
 		#Save frames
 		cv2.imwrite(self.dst_path + "left_{:03d}.png".format(self.bicoag_count), self.left_frame) #Left
 		cv2.imwrite(self.dst_path + "right_{:03d}.png".format(self.bicoag_count), self.right_frame) #Right
-
 
 	def createTimeStamp(self):
 		ts = time.time()
