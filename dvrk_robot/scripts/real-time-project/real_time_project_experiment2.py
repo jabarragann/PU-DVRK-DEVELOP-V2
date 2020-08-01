@@ -24,9 +24,16 @@ import socket
 import os
 from os import mkdir, makedirs
 from os.path import join, exists
+from itertools import chain
 
 
 class collection_module:
+
+	"""
+	All kinematic data will be syncronized w.r.t. the left camera.
+	Every time a new frame arrives to the callback the kinematic information of all the arms
+	will be saved.
+	"""
 
 	class ArmKinematic:
 		def __init__(self, arm_name, number_of_joints, has_gripper, file):
@@ -57,9 +64,10 @@ class collection_module:
 			self.rz = data.pose.orientation.z
 			self.rw = data.pose.orientation.w
 
-		def save_to_file(self,):
-			#File header ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6 --> (ts,translation, rotation, joints)
-			message1 = "{:},".format(rospy.Time.now())
+		def save_to_file(self,ts, idx):
+			#File header ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6 --> (ts, translation, rotation, joints)
+			message1 =  "{:},".format(rospy.Time.now())
+			message1 += "{:d},".format(idx)
 			message1 += "{: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, "\
 						.format(self.x, self.y,self.z,self.rx,
 							self.ry,self.rz,self.rw)
@@ -75,7 +83,7 @@ class collection_module:
 			self.file.close()
 
 
-	def __init__(self, trial = None, dst_path = None, rig_name=None, message= None):
+	def __init__(self, trial = None, dst_path = None, rig_name=None, message= None,invert_img= False):
 
 		
 		self.dst_path = dst_path 
@@ -145,8 +153,15 @@ class collection_module:
 		self.mtmr_joints_subs = rospy.Subscriber("/dvrk/MTMR/state_joint_current", JointState, self.mtmr_joints_callback)
 
 		##Video
-		self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.left_callback)
-		self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.right_callback)
+		self.invert_img = invert_img
+
+		if not self.invert_img:
+			self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.left_callback)
+			self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.right_callback)
+		else:
+			#Swap right and left cameras in inversion mode.
+			self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.right_callback)
+			self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.left_callback)
 
 		############
 		#Publishers#
@@ -173,16 +188,16 @@ class collection_module:
 		self.out_MTMR = open(join(self.dst_path,"MTMR__kinematics.txt"),'w')
 		self.out_MTMR_local = open(join(self.dst_path,"MTMR_local_kinematics.txt"),'w')
 
-		self.out_left_ts.write("ts, frame_count\n")
-		self.out_right_ts.write("ts, frame_count\n")
-		self.out_PSM1.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
+		self.out_left_ts.write("ts,idx\n")
+		self.out_right_ts.write("ts,idx\n")
+		self.out_PSM1.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
 		self.out_PSM1_local.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
-		self.out_PSM2.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_PSM2_local.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
-		self.out_MTML.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_MTML_local.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
-		self.out_MTMR.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_MTMR_local.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
+		self.out_PSM2.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
+		self.out_PSM2_local.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
+		self.out_MTML.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
+		self.out_MTML_local.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
+		self.out_MTMR.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
+		self.out_MTMR_local.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
 
 
 	def modifyImageAndPublish(self,cv_image_orig, publisherId=1):
@@ -227,6 +242,8 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
+			if self.invert_img:
+				cv_image = cv2.flip(cv_image, 0)
 			self.left_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
@@ -235,12 +252,17 @@ class collection_module:
 
 		self.out_left.write(modified_frame)
 		self.frame_counter_left += 1
-		self.out_left_ts.write("{:},{:d},\n".format(str(rospy.Time.now()), self.frame_counter_left))
+		ts = rospy.Time.now()
+		self.out_left_ts.write("{:},{:d},\n".format(str(ts), self.frame_counter_left))
+
+		self.save_all(str(ts), self.frame_counter_left)
 
 	def right_callback(self,data):
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
+			if self.invert_img:
+				cv_image = cv2.flip(cv_image, 0)
 			self.right_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
@@ -270,13 +292,13 @@ class collection_module:
 	#PSM1 callback
 	def psm1_cartesian_callback(self, data):
 		self.psm1_kinematic.set_pose(data)
-		if self.record:
-			self.psm1_kinematic.save_to_file()
+		# if self.record:
+		# 	self.psm1_kinematic.save_to_file()
 
 	def psm1_cartesian_local_callback(self, data):
 		self.psm1_kinematic_local.set_pose(data)
-		if self.record:
-			self.psm1_kinematic_local.save_to_file()
+		# if self.record:
+		# 	self.psm1_kinematic_local.save_to_file()
 
 	def psm1_joints_callback(self, data):
 		self.psm1_kinematic.set_joints(data.position)
@@ -289,13 +311,13 @@ class collection_module:
 	#PSM2 callbacks
 	def psm2_cartesian_callback(self, data):
 		self.psm2_kinematic.set_pose(data)
-		if self.record:
-			self.psm2_kinematic.save_to_file()
+		# if self.record:
+		# 	self.psm2_kinematic.save_to_file()
 
 	def psm2_cartesian_local_callback(self, data):
 		self.psm2_kinematic_local.set_pose(data)
-		if self.record:
-			self.psm2_kinematic_local.save_to_file()
+		# if self.record:
+		# 	self.psm2_kinematic_local.save_to_file()
 
 
 	def psm2_joints_callback(self, data):
@@ -309,13 +331,13 @@ class collection_module:
 	#MTML callbacks
 	def mtml_cartesian_callback(self, data):
 		self.mtml_kinematic.set_pose(data)
-		if self.record:
-			self.mtml_kinematic.save_to_file()
+		# if self.record:
+		# 	self.mtml_kinematic.save_to_file()
 
 	def mtml_cartesian_local_callback(self, data):
 		self.mtml_kinematic_local.set_pose(data)
-		if self.record:
-			self.mtml_kinematic_local.save_to_file()
+		# if self.record:
+		# 	self.mtml_kinematic_local.save_to_file()
 
 	def mtml_joints_callback(self, data):
 		self.mtml_kinematic.set_joints(data.position)
@@ -325,13 +347,13 @@ class collection_module:
 	#MTMR callbacks
 	def mtmr_cartesian_callback(self, data):
 		self.mtmr_kinematic.set_pose(data)
-		if self.record:
-			self.mtmr_kinematic.save_to_file()
+		# if self.record:
+		# 	self.mtmr_kinematic.save_to_file()
 
 	def mtmr_cartesian_local_callback(self, data):
 		self.mtmr_kinematic_local.set_pose(data)
-		if self.record:
-			self.mtmr_kinematic_local.save_to_file()
+		# if self.record:
+		# 	self.mtmr_kinematic_local.save_to_file()
 
 	def mtmr_joints_callback(self, data):
 		self.mtmr_kinematic.set_joints(data.position)
@@ -344,6 +366,11 @@ class collection_module:
 		ts = time.time()
 		return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%Hh.%Mm.%Ss_')
 
+	def save_all(self,ts, idx):
+		#Save all kinematic information
+		for obj in chain(self.kinematic_dict.values(),self.local_kinematic_dict.values()):
+			obj.save_to_file(ts,idx)
+	
 	def close_files(self):
 
 		self.out_left.release()
@@ -383,6 +410,7 @@ def main():
 	task = args.task
 	condition= args.condition
 	trial = args.trial
+	invert_img = False
 
 
 	#Validate parameters
@@ -397,6 +425,9 @@ def main():
 	except ValueError:
 		print("Trial needs to be a integer")
 		exit()
+
+	if condition == 'inversion':
+		invert_img = True
 
 	#create path
 	task_condition = task + "_" + condition
@@ -414,7 +445,7 @@ def main():
 
 
 	print("Starting Da vinci video Operation...")
-	cm = collection_module(trial = trial, dst_path = dst_path, rig_name=rig_name, message = message)
+	cm = collection_module(trial = trial, dst_path = dst_path, rig_name=rig_name, message = message, invert_img= invert_img)
 
 	#Sleep until the subscribers are ready.
 	time.sleep(0.10)

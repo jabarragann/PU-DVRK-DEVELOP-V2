@@ -24,6 +24,7 @@ import socket
 import os
 
 #Inconsistency between files headers and the order in which data was written.
+#It should be already been fix but keep this in case you run into errors.
 
 class hand_eye_collection_module:
 
@@ -237,40 +238,21 @@ class hand_eye_collection_module:
 			self.bicoag_count += 1
 			print("bicoag pressed count: %i, Recording..." % self.bicoag_count)
 
-
 	#ECM callbacks
 	def ecm_cartesian_callback(self, data):
-
-		self.ecm_cartesian_kin.x = data.pose.position.x
-		self.ecm_cartesian_kin.y = data.pose.position.y
-		self.ecm_cartesian_kin.z = data.pose.position.z
-
-		self.ecm_cartesian_kin.rx = data.pose.orientation.x
-		self.ecm_cartesian_kin.ry = data.pose.orientation.y
-		self.ecm_cartesian_kin.rz = data.pose.orientation.z
-		self.ecm_cartesian_kin.rw = data.pose.orientation.w
+		self.ecm_cartesian_kin.set_pose(data)
 
 		if self.save_frames_and_kinematics:
 			self.saving_frame_kinematic()
 			self.save_frames_and_kinematics = False
 
-
 	def ecm_cartesian_local_callback(self, data):
-		
-		self.ecm_cartesian_local_kin.x = data.pose.position.x
-		self.ecm_cartesian_local_kin.y = data.pose.position.y
-		self.ecm_cartesian_local_kin.z = data.pose.position.z
-
-		self.ecm_cartesian_local_kin.rx = data.pose.orientation.x
-		self.ecm_cartesian_local_kin.ry = data.pose.orientation.y
-		self.ecm_cartesian_local_kin.rz = data.pose.orientation.z
-		self.ecm_cartesian_local_kin.rw = data.pose.orientation.w
+		self.ecm_cartesian_local_kin.set_pose(data)
 
 	def ecm_joints_callback(self, data):
 		self.joints_ecm = data.position
 
 	def saving_frame_kinematic(self):
-
 		#Save kinematics
 		self.ecm_cartesian_kin.save_to_file(idx=self.bicoag_count)
 		self.ecm_cartesian_local_kin.save_to_file (idx=self.bicoag_count)
