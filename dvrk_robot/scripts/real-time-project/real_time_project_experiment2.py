@@ -155,13 +155,24 @@ class collection_module:
 		##Video
 		self.invert_img = invert_img
 
-		
+
+		#Had to this weird if statement to fix a weird bug of ROS
+		#Apparently using two rospy.Subscriber statements to the same topic is not good, even if they are inside a if statement.
 		if not invert_img:
-			self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.left_callback)
-			self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.right_callback)
+			print("Normal view")
+			left_topic ="/"+rig_name+"/left/inverted"
+			left_callback = self.left_callback
+			right_topic = "/"+rig_name+"/right/inverted"
+			right_callback = self.right_callback
 		else:
-			self.image_sub_left = rospy.Subscriber("/video0/image_raw",Image,self.right_callback)
-    		self.image_sub_right = rospy.Subscriber("/video1/image_raw",Image,self.left_callback)
+			print("Inverted view")
+			left_topic ="/video0/image_raw"
+			left_callback = self.right_callback
+			right_topic = "/video1/image_raw"
+			right_callback = self.left_callback
+
+		self.image_sub_left  = rospy.Subscriber(left_topic ,Image,left_callback)
+		self.image_sub_right = rospy.Subscriber(right_topic,Image,right_callback)
 
 		############
 		#Publishers#
@@ -242,8 +253,6 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
-			# if self.invert_img:
-			# 	cv_image = cv2.flip(cv_image, -1) #Flip horizontally and vertically
 			self.left_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
@@ -261,9 +270,6 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
-			# if self.invert_img:
-			# 	cv_image = cv2.flip(cv_image, 0) #Flip horizontally and vertically
-			self.right_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
 
