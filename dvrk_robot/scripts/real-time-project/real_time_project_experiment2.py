@@ -155,13 +155,13 @@ class collection_module:
 		##Video
 		self.invert_img = invert_img
 
-		if not self.invert_img:
+		
+		if not invert_img:
 			self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.left_callback)
 			self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.right_callback)
 		else:
-			#Swap right and left cameras in inversion mode.
-			self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.right_callback)
-			self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.left_callback)
+			self.image_sub_left = rospy.Subscriber("/video0/image_raw",Image,self.right_callback)
+    		self.image_sub_right = rospy.Subscriber("/video1/image_raw",Image,self.left_callback)
 
 		############
 		#Publishers#
@@ -242,8 +242,8 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
-			if self.invert_img:
-				cv_image = cv2.flip(cv_image, 0)
+			# if self.invert_img:
+			# 	cv_image = cv2.flip(cv_image, -1) #Flip horizontally and vertically
 			self.left_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
@@ -261,8 +261,8 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
-			if self.invert_img:
-				cv_image = cv2.flip(cv_image, 0)
+			# if self.invert_img:
+			# 	cv_image = cv2.flip(cv_image, 0) #Flip horizontally and vertically
 			self.right_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
@@ -414,8 +414,8 @@ def main():
 
 
 	#Validate parameters
-	if task not in ['suture','knot']:
-		print("Task needs to be either the word suture or knot")
+	if task not in ['peg', 'suture','knot']:
+		print("Task needs to be either the word suture, peg or knot")
 		exit()
 	if condition not in ['normal','nback', 'inversion']:
 		print("Condition need to be either the work normal, nback or inversion")
