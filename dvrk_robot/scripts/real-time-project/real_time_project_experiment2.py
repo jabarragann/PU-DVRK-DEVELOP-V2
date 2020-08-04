@@ -36,7 +36,7 @@ class collection_module:
 	"""
 
 	class ArmKinematic:
-		def __init__(self, arm_name, number_of_joints, has_gripper, file):
+		def __init__(self, arm_name, number_of_joints, has_gripper, file, effort_file=None):
 			self.arm_name = arm_name
 			self.x = 0
 			self.y = 0
@@ -46,13 +46,19 @@ class collection_module:
 			self.rz = 0
 			self.rw = 0
 			self.joints = np.zeros(number_of_joints) #NOt counting the gripper.
+			self.joints_effort = np.zeros(number_of_joints) 
 
 			self.file = file
+			self.effort_file = effort_file
+
 			if has_gripper:
 				self.gripper = 0
 
 		def set_joints(self,joints):
 			self.joints[:] = joints 
+
+		def set_joints_effort(self, joints_effort):
+			self.joints_effort[:] = joints_effort
 
 		def set_pose(self, data):
 			self.x = data.pose.position.x
@@ -65,7 +71,7 @@ class collection_module:
 			self.rw = data.pose.orientation.w
 
 		def save_to_file(self,ts, idx):
-			#File header ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6 --> (ts, translation, rotation, joints)
+			#File header ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6 --> (ts, translation, rotation, joints position)
 			message1 =  "{:},".format(rospy.Time.now())
 			message1 += "{:d},".format(idx)
 			message1 += "{: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, {: 0.7f}, "\
@@ -76,7 +82,20 @@ class collection_module:
 			message1 += joints
 			message1 += ",\n"
 			self.file.write(message1)
-			self.file.flush()
+			# self.file.flush()
+
+		def save_effort(self,ts, idx):
+			if self.effort_file is not None:
+				#File header ts,idx,j0,j1,j2,j3,j4,j5,j6 --> (ts, translation, rotation, joints_effort)
+				message1 =  "{:},".format(rospy.Time.now())
+				message1 += "{:d},".format(idx)
+		
+				joints_effort = ",".join(["{: 0.8f}".format(joint_i) for joint_i in self.joints_effort])
+				message1 += joints_effort
+				message1 += ",\n"
+				self.effort_file.write(message1)
+				# self.effort_file.flush()
+
 
 		def close_file(self,):
 			self.file.flush()
@@ -115,8 +134,8 @@ class collection_module:
 		self.mtmr_kinematic = self.ArmKinematic('mtmr', 7, has_gripper=False, file=self.out_MTMR)
 		self.kinematic_dict ={'psm1':self.psm1_kinematic,'psm2':self.psm2_kinematic,'mtml':self.mtml_kinematic,'mtmr':self.mtmr_kinematic}
 
-		self.psm1_kinematic_local = self.ArmKinematic('psm1', 6, has_gripper=True, file=self.out_PSM1_local)
-		self.psm2_kinematic_local = self.ArmKinematic('psm2', 6, has_gripper=True, file=self.out_PSM2_local)
+		self.psm1_kinematic_local = self.ArmKinematic('psm1', 6, has_gripper=True, file=self.out_PSM1_local, effort_file = self.out_PSM1_local_effort)
+		self.psm2_kinematic_local = self.ArmKinematic('psm2', 6, has_gripper=True, file=self.out_PSM2_local, effort_file = self.out_PSM2_local_effort)
 		self.mtml_kinematic_local = self.ArmKinematic('mtml', 7, has_gripper=False, file=self.out_MTML_local)
 		self.mtmr_kinematic_local = self.ArmKinematic('mtmr', 7, has_gripper=False, file=self.out_MTMR_local)
 		self.local_kinematic_dict ={'psm1':self.psm1_kinematic_local,'psm2':self.psm2_kinematic_local,'mtml':self.mtml_kinematic_local,'mtmr':self.mtmr_kinematic_local}
@@ -138,7 +157,7 @@ class collection_module:
 
 		##PSM2 Kinematics
 		self.psm2_cartesian_subs = rospy.Subscriber("/dvrk/PSM2/position_cartesian_current", PoseStamped, self.psm2_cartesian_callback)
-		self.psm2_cartesian_local_subs = rospy.Subscriber("/dvrk/PSM2/position_cartesian_local_current", PoseStamped, self.psm2_cartesian_local_callback)
+		self.psm2_cartesian_local_subs = rospy.Subscriber("/dvrk/PSM2/position_cartesian_local_current", PoseStamped, self.psm2_cartesian_local_callback,)
 		self.psm2_joints_subs = rospy.Subscriber("/dvrk/PSM2/state_joint_current", JointState, self.psm2_joints_callback)
 		self.psm2_gripper_subs = rospy.Subscriber("/dvrk/PSM2/state_jaw_current", JointState, self.psm2_gripper_callback)
 
@@ -186,15 +205,22 @@ class collection_module:
 		self.image_pub2_compressed = rospy.Publisher("/"+rig_name+"/modified_display_right/compressed",CompressedImage, queue_size=5)
 
 	def init_videos_and_files(self):
-		fourcc = cv2.VideoWriter_fourcc(*'XVID')
+		fourcc = cv2.VideoWriter_fourcc(*'XVID')		
+		self.out_bicoag = open(join(self.dst_path, "bicoag_count.txt"),'w')
+
 		self.out_left = cv2.VideoWriter(join(self.dst_path,"video_left_color.avi"),fourcc, 30.0, (640,480))
 		self.out_right = cv2.VideoWriter(join(self.dst_path,"video_right_color.avi"),fourcc, 30.0, (640,480))
 		self.out_left_ts = open(join(self.dst_path, "video_left_color_ts.txt"),'w')
 		self.out_right_ts = open(join(self.dst_path,"video_right_color_ts.txt"),'w')
+
 		self.out_PSM1 = open(join(self.dst_path,"PSM1_kinematics.txt"),'w')
 		self.out_PSM1_local = open(join(self.dst_path,"PSM1_local_kinematics.txt"),'w')
+		self.out_PSM1_local_effort = open(join(self.dst_path,"PSM1_local_effort.txt"),'w')
+
 		self.out_PSM2 = open(join(self.dst_path,"PSM2_kinematics.txt"),'w')
 		self.out_PSM2_local = open(join(self.dst_path,"PSM2_local_kinematics.txt"),'w')
+		self.out_PSM2_local_effort = open(join(self.dst_path,"PSM2_local_effort.txt"),'w')
+
 		self.out_MTML = open(join(self.dst_path,"MTML_kinematics.txt"),'w')
 		self.out_MTML_local = open(join(self.dst_path,"MTML_local_kinematics.txt"),'w')
 		self.out_MTMR = open(join(self.dst_path,"MTMR__kinematics.txt"),'w')
@@ -202,14 +228,20 @@ class collection_module:
 
 		self.out_left_ts.write("ts,idx\n")
 		self.out_right_ts.write("ts,idx\n")
-		self.out_PSM1.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_PSM1_local.write("ts,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
-		self.out_PSM2.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_PSM2_local.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
-		self.out_MTML.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_MTML_local.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
-		self.out_MTMR.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")        
-		self.out_MTMR_local.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n")
+		self.out_bicoag.write("ts,idx,started\n")
+
+		self.out_PSM1_local_effort.write("ts,idx,j0,j1,j2,j3,j4,j5,j6\n")
+		self.out_PSM2_local_effort.write("ts,idx,j0,j1,j2,j3,j4,j5,j6\n")
+		
+		header = "ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5,j6\n"
+		self.out_PSM1.write(header)        
+		self.out_PSM1_local.write(header)
+		self.out_PSM2.write(header)        
+		self.out_PSM2_local.write(header)
+		self.out_MTML.write(header)        
+		self.out_MTML_local.write(header)
+		self.out_MTMR.write(header)        
+		self.out_MTMR_local.write(header)
 
 
 	def modifyImageAndPublish(self,cv_image_orig, publisherId=1):
@@ -294,6 +326,8 @@ class collection_module:
 			self.bicoag_count += 1
 			print("bicoag pressed count: %i, Recording..." % self.bicoag_count)
 
+			self.out_bicoag.write("{:},{:},{:}\n".format(rospy.Time.now(),self.bicoag_count, self.turn_on_square))
+
 	def coag_callback(self,data):
 		# if the button is pressed, record data
 		self.coag_count +=1
@@ -306,17 +340,15 @@ class collection_module:
 	#PSM1 callback
 	def psm1_cartesian_callback(self, data):
 		self.psm1_kinematic.set_pose(data)
-		# if self.record:
-		# 	self.psm1_kinematic.save_to_file()
 
 	def psm1_cartesian_local_callback(self, data):
 		self.psm1_kinematic_local.set_pose(data)
-		# if self.record:
-		# 	self.psm1_kinematic_local.save_to_file()
 
 	def psm1_joints_callback(self, data):
 		self.psm1_kinematic.set_joints(data.position)
 		self.psm1_kinematic_local.set_joints(data.position)
+
+		self.psm1_kinematic_local.set_joints_effort(data.effort)
 
 	def psm1_gripper_callback(self, data):
 		self.psm1_kinematic.gripper = data.position[0]
@@ -325,18 +357,16 @@ class collection_module:
 	#PSM2 callbacks
 	def psm2_cartesian_callback(self, data):
 		self.psm2_kinematic.set_pose(data)
-		# if self.record:
-		# 	self.psm2_kinematic.save_to_file()
 
 	def psm2_cartesian_local_callback(self, data):
 		self.psm2_kinematic_local.set_pose(data)
-		# if self.record:
-		# 	self.psm2_kinematic_local.save_to_file()
 
 
 	def psm2_joints_callback(self, data):
 		self.psm2_kinematic.set_joints(data.position)
 		self.psm2_kinematic_local.set_joints(data.position)
+
+		self.psm2_kinematic_local.set_joints_effort(data.effort)
 
 	def psm2_gripper_callback(self, data):
 		self.psm2_kinematic.gripper = data.position[0]
@@ -345,34 +375,24 @@ class collection_module:
 	#MTML callbacks
 	def mtml_cartesian_callback(self, data):
 		self.mtml_kinematic.set_pose(data)
-		# if self.record:
-		# 	self.mtml_kinematic.save_to_file()
 
 	def mtml_cartesian_local_callback(self, data):
 		self.mtml_kinematic_local.set_pose(data)
-		# if self.record:
-		# 	self.mtml_kinematic_local.save_to_file()
 
 	def mtml_joints_callback(self, data):
 		self.mtml_kinematic.set_joints(data.position)
 		self.mtml_kinematic_local.set_joints(data.position)
 
-
 	#MTMR callbacks
 	def mtmr_cartesian_callback(self, data):
 		self.mtmr_kinematic.set_pose(data)
-		# if self.record:
-		# 	self.mtmr_kinematic.save_to_file()
 
 	def mtmr_cartesian_local_callback(self, data):
 		self.mtmr_kinematic_local.set_pose(data)
-		# if self.record:
-		# 	self.mtmr_kinematic_local.save_to_file()
 
 	def mtmr_joints_callback(self, data):
 		self.mtmr_kinematic.set_joints(data.position)
 		self.mtmr_kinematic_local.set_joints(data.position)
-
 
 	################################################################
 
@@ -384,6 +404,7 @@ class collection_module:
 		#Save all kinematic information
 		for obj in chain(self.kinematic_dict.values(),self.local_kinematic_dict.values()):
 			obj.save_to_file(ts,idx)
+			obj.save_effort(ts,idx)
 	
 	def close_files(self):
 

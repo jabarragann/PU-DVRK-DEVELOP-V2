@@ -1,0 +1,8 @@
+
+
+
+The following set of scripts were develop to home psm and camera arms for a specific experiment. Most likely the joints position that were programmed in those files will not work 
+in new setups and can create dangerous collisions among the arms.
+
+Please make sure before running them that the arm will not collide with anything.
+
