@@ -83,7 +83,7 @@ class collection_module:
 			self.file.close()
 
 
-	def __init__(self, trial = None, dst_path = None, rig_name=None, message= None,invert_img= False):
+	def __init__(self, trial = None, dst_path = None, rig_name=None, message= None, invert_img= False, flip=False):
 
 		
 		self.dst_path = dst_path 
@@ -154,6 +154,7 @@ class collection_module:
 
 		##Video
 		self.invert_img = invert_img
+		self.flip = flip
 
 
 		#Had to this weird if statement to fix a weird bug of ROS
@@ -253,6 +254,10 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
+			
+			if self.flip:
+				cv_image = cv2.flip(cv_image, 0)
+			
 			self.left_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
@@ -270,6 +275,9 @@ class collection_module:
 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(data,"bgr8")
+
+			if self.flip:
+				cv_image = cv2.flip(cv_image, 0)
 		except CvBridgeError as e:
 			print(e)
 
@@ -417,13 +425,13 @@ def main():
 	condition= args.condition
 	trial = args.trial
 	invert_img = False
-
+	flip = False
 
 	#Validate parameters
 	if task not in ['peg', 'suture','knot']:
 		print("Task needs to be either the word suture, peg or knot")
 		exit()
-	if condition not in ['normal','nback', 'inversion']:
+	if condition not in ['normal','nback', 'swap', 'inversion', 'flip']:
 		print("Condition need to be either the work normal, nback or inversion")
 		exit()
 	try: 
@@ -434,6 +442,9 @@ def main():
 
 	if condition == 'inversion':
 		invert_img = True
+	elif condition == 'flip':
+		flip=True
+
 
 	#create path
 	task_condition = task + "_" + condition
@@ -451,7 +462,7 @@ def main():
 
 
 	print("Starting Da vinci video Operation...")
-	cm = collection_module(trial = trial, dst_path = dst_path, rig_name=rig_name, message = message, invert_img= invert_img)
+	cm = collection_module(trial = trial, dst_path = dst_path, rig_name=rig_name, message = message, invert_img= invert_img, flip=flip)
 
 	#Sleep until the subscribers are ready.
 	time.sleep(0.10)

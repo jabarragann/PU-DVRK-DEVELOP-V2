@@ -25,12 +25,16 @@ Launch file for real-time project experiments
   <node name="image_inverter" pkg="dvrk_robot" type="invert_image.py" output="screen" args="">
     <param name="rig_name" value="$(arg rig_name)" />
   </node>
+
+  <!-- Swaping arms script -->
+  <node name="swaping_arms" pkg="dvrk_robot" type="swaping_arms.py" output="screen" args="">
+  </node>
   
   <!-- Start the dVRK console -->
   <node name="dvrk_node"
   pkg="dvrk_robot"
   type="dvrk_console_json"        
-  args="-j $(find dvrk_config)/pu-DVRK/console-ECM-MTML-MTMR-PSM1-PSM2-PSM3-Teleop.json"                     
+  args="-j $(find dvrk_config)/pu-DVRK/console-ECM-MTML-PSM2-MTMR-PSM1-Teleop.json"                     
   output="screen"/> 
 
 </launch>
