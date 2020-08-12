@@ -106,7 +106,7 @@ class collection_module:
 
 		
 		self.dst_path = dst_path 
-		
+		self.message = message
 
 		#Init video and timestamp files
 		self.init_videos_and_files()
@@ -122,7 +122,7 @@ class collection_module:
 
 		#Font variables
 		self.font = cv2.FONT_HERSHEY_SIMPLEX 
-		self.fontSize = 0.8
+		self.fontSize = 1.0
 		self.color = (0,255,0)
 		self.thickness = 1
 		self.alpha = 0.8
@@ -140,36 +140,14 @@ class collection_module:
 		self.mtmr_kinematic_local = self.ArmKinematic('mtmr', 7, has_gripper=False, file=self.out_MTMR_local)
 		self.local_kinematic_dict ={'psm1':self.psm1_kinematic_local,'psm2':self.psm2_kinematic_local,'mtml':self.mtml_kinematic_local,'mtmr':self.mtmr_kinematic_local}
 
-		#counting Task variables
-		self.init_task = True
-
-		self.message = message
-		self.timer_str = "00:00"
-		self.init_time = time.time()
-		self.start_procedure = False
-		
-		self.numb_targets = 1
-		self.target = random.sample(range(2,10), self.numb_targets)
-		self.target_str = ','.join([str(i) for i in self.target])
-
-		self.score = 0
-		self.display_message = '{:}  T:{:}  {:}  S:{:+03d}'.format(self.message, self.target_str, self.timer_str, self.score)
-
-		self.score_rect_color = (0,255,0)
-		self.show_score_rect = False
 
 		#############
 		#Subscribers#
 		#############
 
-
-		#Score animations
-		self.score_sub = rospy.Subscriber("score_correctly",Joy, self.score_callback)
-
 		##Pedal 
 		self.bicoag_pedal_sub = rospy.Subscriber("/dvrk/footpedals/bicoag", Joy, self.bicoag_callback)
 		self.coag_pedal_sub   = rospy.Subscriber("/dvrk/footpedals/coag", Joy, self.coag_callback)
-		self.minus_pedal_sub = rospy.Subscriber("/dvrk/footpedals/cam_minus", Joy, self.minus_callback)
 
 		##PSM1 Kinematics
 		self.psm1_cartesian_subs = rospy.Subscriber("/dvrk/PSM1/position_cartesian_current", PoseStamped, self.psm1_cartesian_callback)
@@ -220,47 +198,11 @@ class collection_module:
 		#Publishers#
 		############
 
-		#Score animations
-		self.score_pub = rospy.Publisher("score_correctly", Joy, queue_size=5)
-
 		##Modified displays + compressed
 		self.image_pub1 = rospy.Publisher("/"+rig_name+"/modified_display_left",Image, queue_size=5)
 		self.image_pub2 = rospy.Publisher("/"+rig_name+"/modified_display_right",Image, queue_size=5)
 		self.image_pub1_compressed = rospy.Publisher("/"+rig_name+"/modified_display_left/compressed" ,CompressedImage, queue_size=5)
 		self.image_pub2_compressed = rospy.Publisher("/"+rig_name+"/modified_display_right/compressed",CompressedImage, queue_size=5)
-
-	#########################
-	##Counting Task Methods##
-	#########################
-	def update_timer(self, secondsCounter):
-		seconds = secondsCounter % 60
-		minutes = int(secondsCounter / 60)
-		self.timer_str = "{:02d}:{:02d}".format(minutes,seconds)
-
-	def update(self):
-		
-		if self.start_procedure:
-			
-			seconds_counter = int((time.time() - self.init_time))
-
-			#Update timer
-			self.update_timer(seconds_counter)
-			self.display_message = '{:}  T:{:}  {:}  S:{:+03d}'.format(self.message, self.target_str, self.timer_str, self.score)
-
-			# print(seconds_counter)
-			# print(seconds_counter % 5)
-			if seconds_counter % 20 == 0:
-				self.target = random.sample(range(2,10), self.numb_targets)
-				self.target_str = ','.join([str(i) for i in self.target])
-
-			# #Remove 1 point every time seconds_counter % 10 matches a target
-			# if seconds_counter % 10 in self.target:
-			# 	self.score -= 1
-					
-
-	############
-	##Video ####
-	############
 
 	def init_videos_and_files(self):
 		fourcc = cv2.VideoWriter_fourcc(*'XVID')		
@@ -302,7 +244,11 @@ class collection_module:
 		self.out_MTMR_local.write(header)
 
 
-	def modifyImageAndPublish(self,cv_image_orig, misalignment=0, publisherId=1):
+	def update(self,):
+		pass
+
+
+	def modifyImageAndPublish(self,cv_image_orig, publisherId=1):
 
 		cv_image = cv_image_orig.copy()
 		publisher = self.image_pub1 if publisherId == 1 else self.image_pub2
@@ -314,14 +260,9 @@ class collection_module:
 			#Add recording indicator#
 			#########################
 			overlay = cv_image.copy()
-			
-			overlay = cv2.putText(overlay, self.display_message, (0+misalignment,25), self.font, self.fontSize, self.color, self.thickness, cv2.LINE_AA)
+			overlay = cv2.putText(overlay, '{:}'.format(self.message), (0,25), self.font, self.fontSize, self.color, self.thickness, cv2.LINE_AA)
 			rect_color = (0,255,0) if self.turn_on_square else (0,0,255)
-			cv2.rectangle(cv_image, (600+misalignment, 0), (640+misalignment,40), rect_color, -1)
-
-			if self.show_score_rect:
-				cv2.rectangle(cv_image, (560+misalignment, 0), (600+misalignment,40), self.score_rect_color, -1)
-
+			cv2.rectangle(cv_image, (600, 0), (640,40), rect_color, -1)
 			cv2.addWeighted(overlay, self.alpha, cv_image, 1 - self.alpha, 0, cv_image)
 
 		#Publish modified Image
@@ -344,16 +285,6 @@ class collection_module:
 	#########Subscriber callbacks##############
 	###########################################
 
-	#Animation callback
-	def score_callback(self,data):
-		
-		self.score_rect_color = (0,255,0) if data.header.frame_id == "right" else (0,0,255)
-		
-		if data.buttons[0]:
-			self.show_score_rect = True
-			time.sleep(0.4)
-			self.show_score_rect = False
-
 	#Video callbacks
 	def left_callback(self,data):
 
@@ -367,7 +298,7 @@ class collection_module:
 		except CvBridgeError as e:
 			print(e)
 
-		modified_frame = self.modifyImageAndPublish(cv_image,misalignment=0, publisherId=1)
+		modified_frame = self.modifyImageAndPublish(cv_image, publisherId=1)
 
 		self.out_left.write(modified_frame)
 		self.frame_counter_left += 1
@@ -386,7 +317,7 @@ class collection_module:
 		except CvBridgeError as e:
 			print(e)
 
-		modified_frame = self.modifyImageAndPublish(cv_image,misalignment=66, publisherId=2)
+		modified_frame = self.modifyImageAndPublish(cv_image, publisherId=2)
 		
 		self.out_right.write(modified_frame)
 		self.frame_counter_right += 1
@@ -395,14 +326,6 @@ class collection_module:
 	#Pedal callbacks
 	def bicoag_callback(self,data):
 		if data.buttons[0]:
-			#Counting task
-			self.start_procedure = not self.start_procedure
-
-			if self.init_task:	
-				self.init_time = time.time()
-				self.init_task = False 
-
-			#Other
 			self.turn_on_square = not self.turn_on_square 
 			self.bicoag_count += 1
 			print("bicoag pressed count: %i, Recording..." % self.bicoag_count)
@@ -417,32 +340,6 @@ class collection_module:
 		    self.record = True
 		else:
 		    self.record = False
-
-	def minus_callback(self,data):
-		
-		if self.start_procedure and data.buttons[0]:
-			pedal_ts = time.time()
-			seconds_counter = int(pedal_ts - self.init_time - 0.20)
-
-			seconds_first_digit = seconds_counter % 10 
-			decimal = (pedal_ts - self.init_time) % 1
-
-
-			# print(pedal_ts - self.init_time)
-			# print(decimal)
-			# print(seconds_first_digit)
-
-			if seconds_first_digit in self.target:
-				self.score += 3
-				
-				data.header.frame_id = "right"
-				self.score_pub.publish(data)
-			else:
-				self.score -= 3
-				
-				data.header.frame_id = "wrong"
-				self.score_pub.publish(data)
-
 
 	#PSM1 callback
 	def psm1_cartesian_callback(self, data):
@@ -559,8 +456,8 @@ def main():
 	if task not in ['peg', 'suture','knot']:
 		print("Task needs to be either the word suture, peg or knot")
 		exit()
-	if condition not in ['count']:
-		print("Condition needs to be count")
+	if condition not in ['normal','nback', 'swap', 'inversion', 'flip']:
+		print("Condition need to be either the work normal, nback or inversion")
 		exit()
 	try: 
 		int(trial) # Check if trial is an integer
@@ -593,12 +490,11 @@ def main():
 	cm = collection_module(trial = trial, dst_path = dst_path, rig_name=rig_name, message = message, invert_img= invert_img, flip=flip)
 
 	#Sleep until the subscribers are ready.
-	time.sleep(0.20)
+	time.sleep(0.10)
 
 	try:
 		while not rospy.core.is_shutdown():
-			cm.update()
-			rospy.rostime.wallsleep(1.0)
+			rospy.rostime.wallsleep(0.25)
 
 	except KeyboardInterrupt:
 		print("Shutting down")
