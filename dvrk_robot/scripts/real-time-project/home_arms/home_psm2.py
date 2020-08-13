@@ -9,7 +9,7 @@ import time
 
 # # Move PSM2 to the initial position
 psm2 = dvrk.psm('PSM2')
-psm2_joint_pos = [-1.06577575, -0.14864716,  0.10963891,  3.2256604,   0.26739763, -1.1241071 ]
+psm2_joint_pos = [-1.08483546, -0.02326087,  0.12713364,  3.22419257,  0.53110607, -1.12032631]
 print('psm2 current')
 print(psm2.get_current_joint_position())
 print('psm2 next')

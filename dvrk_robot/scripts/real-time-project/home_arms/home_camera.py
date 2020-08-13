@@ -4,7 +4,7 @@ import numpy as np
 
 # Change the camera position to the desired one:
 ecm = dvrk.ecm('ECM')
-ecm_joint_pos = [-0.26441084, 0.13176363,  0.1208117, -0.07621097]
+ecm_joint_pos = [-0.25492715,  0.14746505,  0.12288696, -0.00621463]
 
 
 print('ecm current')
