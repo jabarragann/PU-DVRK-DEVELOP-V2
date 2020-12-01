@@ -29,6 +29,7 @@ from os.path import join, exists
 
 #Version 3
 '''
+Newest features
 PSM3 recordings
 kinematic data at each image frame will be saved in a independent file.
 '''
@@ -92,14 +93,29 @@ class hand_eye_collection_module:
 
 	def __init__(self, userId = None, dst_path = None, rig_name=None):
 
-		##Init files
+
+		##############
+		##Init files##
+		##############
 		self.dst_path = dst_path + '/' + self.createTimeStamp() + userId + "/"
 		os.mkdir(self.dst_path)
 		os.mkdir(self.dst_path + 'ecm_snapshots')
 		os.mkdir(self.dst_path + 'psm1_snapshots')
 		os.mkdir(self.dst_path + 'psm2_snapshots')
+		os.mkdir(self.dst_path + 'psm3_snapshots')
 
-		#Create kinematic data structures
+		#Video files
+		fourcc = cv2.VideoWriter_fourcc(*'XVID')
+		self.out_left = cv2.VideoWriter(join(self.dst_path,"video_left_color.avi"),fourcc, 30.0, (640,480))
+		self.out_right = cv2.VideoWriter(join(self.dst_path,"video_right_color.avi"),fourcc, 30.0, (640,480))
+		
+		#kinematic Files
+		self.psm3_kin_file = open(join(self.dst_path,"psm3_kin_file"),'w')
+		self.psm3_kin_file.write("ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,j4,j5\n")
+
+		###################################
+		#Create kinematic data structures##
+		###################################
 		#Create ECM arms
 		header = "ts,idx,x,y,z,rx,ry,rz,rw,j0,j1,j2,j3,\n"
 		self.ecm_cartesian_kin = self.ArmKinematic(arm_name='ecm_cart', number_of_joints=4, has_gripper=False, 
@@ -119,10 +135,10 @@ class hand_eye_collection_module:
 											file_path= self.dst_path + "psm2_snapshots/psm2_cartesian.txt",
 											file_header=header)
 
-		#Video files
-		fourcc = cv2.VideoWriter_fourcc(*'XVID')
-		self.out_left = cv2.VideoWriter(join(self.dst_path,"video_left_color.avi"),fourcc, 30.0, (640,480))
-		self.out_right = cv2.VideoWriter(join(self.dst_path,"video_right_color.avi"),fourcc, 30.0, (640,480))
+		self.psm3_cartesian_kin = self.ArmKinematic(arm_name='psm3_cart', number_of_joints=6, has_gripper=False, 
+											file_path= self.dst_path + "psm3_snapshots/psm3_cartesian.txt",
+											file_header=header)
+
 		#Write video ts and ECM kinematics
 
 		#Header of video_left/right has to change to include ecm and psm1/2
@@ -153,8 +169,10 @@ class hand_eye_collection_module:
 		#PSM buttons
 		self.psm1_snapshot = False
 		self.psm2_snapshot = False
+		self.psm3_snapshot = False
 		self.suj_button_psm1_count = 0
 		self.suj_button_psm2_count = 0
+		self.suj_button_psm3_count = 0
 		
 		#############
 		#Subscribers#
@@ -171,10 +189,14 @@ class hand_eye_collection_module:
 		##PSM1/2 kinematics
 		self.psm1_cartesian_subs = rospy.Subscriber("/dvrk/PSM1/position_cartesian_current", PoseStamped, self.psm1_cartesian_callback)
 		self.psm2_cartesian_subs = rospy.Subscriber("/dvrk/PSM2/position_cartesian_current", PoseStamped, self.psm2_cartesian_callback)
+		self.psm3_cartesian_subs = rospy.Subscriber("/dvrk/PSM3/position_cartesian_current", PoseStamped, self.psm3_cartesian_callback)
+
 		self.psm1_joints_subs = rospy.Subscriber("/dvrk/PSM1/state_joint_current", JointState, self.psm1_joints_callback)
 		self.psm2_joints_subs = rospy.Subscriber("/dvrk/PSM2/state_joint_current", JointState, self.psm2_joints_callback)
+		self.psm3_joints_subs = rospy.Subscriber("/dvrk/PSM3/state_joint_current", JointState, self.psm3_joints_callback)
 
 		self.psm1_suj_subs = rospy.Subscriber("/dvrk/PSM1/io/suj_clutch", Joy, self.setup_button_psm1_callback)
+		self.psm3_suj_subs = rospy.Subscriber("/dvrk/PSM3/io/suj_clutch", Joy, self.setup_button_psm3_callback)
 
 
 		##Video
@@ -238,6 +260,9 @@ class hand_eye_collection_module:
 		msg.data = np.array(cv2.imencode('.jpg', cv_image)[1]).tostring()
 		compressedPublisher.publish(msg)
 
+	###################
+	#IMAGE CALLBACKS ##
+	###################
 	def left_callback(self,data):
 
 		try:
@@ -252,10 +277,13 @@ class hand_eye_collection_module:
 		ecm_kinematics  = self.ecm_cartesian_kin.create_str_repr(ts=rospy.Time.now(),idx=self.left_frame_count)
 		psm1_kinematics = self.psm1_cartesian_kin.create_str_repr(ts=rospy.Time.now(),idx=self.left_frame_count)
 		psm2_kinematics = self.psm2_cartesian_kin.create_str_repr(ts=rospy.Time.now(),idx=self.left_frame_count)
+		psm3_kinematics = self.psm3_cartesian_kin.create_str_repr(ts=rospy.Time.now(),idx=self.left_frame_count)
 		message = ecm_kinematics+','+psm1_kinematics+','+psm2_kinematics+',' +'\n'
+
+		#Write to files
 		self.out_left.write(cv_image)
 		self.out_left_ts.write(message)
-
+		self.psm3_kin_file.write(psm3_kinematics+'\n')
 		#Modify image for display
 		self.modifyImageAndPublish(cv_image, publisherId=1)
 
@@ -280,25 +308,19 @@ class hand_eye_collection_module:
 		#Modify image for display
 		self.modifyImageAndPublish(cv_image, publisherId=2)
 
+
+	###################
+	#PEDALS CALLBACKS##
+	###################
 	def pedal_callback(self,data):
 		if data.buttons[0]:
 			self.save_frames_and_kinematics = True
 			self.bicoag_count += 1
 			print("bicoag pressed count: %i, Recording..." % self.bicoag_count)
 
-
-	def setup_button_psm1_callback(self,data):
-		if data.buttons[0]:
-			self.psm1_snapshot = True
-			self.suj_button_psm1_count += 1
-			print("suj_button_psm1_count pressed count: %i, Recording..." % self.suj_button_psm1_count)
-
-
-	def setup_button_psm2_callback(self,data):
-		pass
-
-
-	#ECM callbacks
+	###############
+	#ECM callbacks#
+	###############
 	def ecm_cartesian_callback(self, data):
 		self.ecm_cartesian_kin.set_pose(data)
 
@@ -313,7 +335,9 @@ class hand_eye_collection_module:
 		self.ecm_cartesian_local_kin.set_joints(data.position)
 		self.ecm_cartesian_kin.set_joints(data.position)
 
-	#PSM1 callback
+	###############
+	#PSM1 callback#
+	###############
 	def psm1_cartesian_callback(self, data):
 		self.psm1_cartesian_kin.set_pose(data)
 
@@ -324,12 +348,42 @@ class hand_eye_collection_module:
 	def psm1_joints_callback(self, data):
 		self.psm1_cartesian_kin.set_joints(data.position)
 
-	#PSM2 callbacks
+	def setup_button_psm1_callback(self,data):
+		if data.buttons[0]:
+			self.psm1_snapshot = True
+			self.suj_button_psm1_count += 1
+			print("suj_button_psm1_count pressed count: %i, Recording..." % self.suj_button_psm1_count)
+
+	################
+	#PSM2 callbacks#
+	################
 	def psm2_cartesian_callback(self, data):
 		self.psm2_cartesian_kin.set_pose(data)
 
 	def psm2_joints_callback(self, data):
 		self.psm2_cartesian_kin.set_joints(data.position)
+
+	################
+	#PSM3 callbacks#
+	################
+	def psm3_cartesian_callback(self, data):
+		self.psm3_cartesian_kin.set_pose(data)
+		if self.psm3_snapshot:
+			self.saving_frame_kinmetic_suj_button_psm3()
+			self.psm3_snapshot = False
+
+	def psm3_joints_callback(self, data):
+		self.psm3_cartesian_kin.set_joints(data.position)
+
+	def setup_button_psm3_callback(self,data):
+		if data.buttons[0]:
+			self.psm3_snapshot = True
+			self.suj_button_psm3_count += 1
+			print("suj_button_psm3_count pressed count: %i, Recording..." % self.suj_button_psm3_count)
+
+	####################
+	#HELPER FUNCTIONS###
+	####################
 
 	def saving_frame_kinematic_bicoag(self):
 		#Save kinematics
@@ -338,7 +392,7 @@ class hand_eye_collection_module:
 		#Save frames
 		cv2.imwrite(self.dst_path + "ecm_snapshots/left_{:03d}.png".format(self.bicoag_count), self.left_frame) #Left
 		cv2.imwrite(self.dst_path + "ecm_snapshots/right_{:03d}.png".format(self.bicoag_count), self.right_frame) #Right
-
+	
 	def saving_frame_kinmetic_suj_button_psm1(self):
 		#Save kinematics
 		self.psm1_cartesian_kin.save_to_file(idx=self.suj_button_psm1_count)
@@ -347,8 +401,13 @@ class hand_eye_collection_module:
 		cv2.imwrite(self.dst_path + "psm1_snapshots/left_{:03d}.png".format(self.suj_button_psm1_count), self.left_frame) #Left
 		cv2.imwrite(self.dst_path + "psm1_snapshots/right_{:03d}.png".format(self.suj_button_psm1_count), self.right_frame) #Right
 
-	def saving_frame_kinmetic_suj_button_psm2(self):
-		pass
+	def saving_frame_kinmetic_suj_button_psm3(self):
+		#Save kinematics
+		self.psm3_cartesian_kin.save_to_file(idx=self.suj_button_psm3_count)
+		
+		#Save frames
+		cv2.imwrite(self.dst_path + "psm3_snapshots/left_{:03d}.png".format(self.suj_button_psm3_count), self.left_frame) #Left
+		cv2.imwrite(self.dst_path + "psm3_snapshots/right_{:03d}.png".format(self.suj_button_psm3_count), self.right_frame) #Right
 
 
 	def createTimeStamp(self):
