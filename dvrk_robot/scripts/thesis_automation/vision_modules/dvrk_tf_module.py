@@ -267,7 +267,7 @@ class dvrk_tf_module:
 
 				#Project corners to chess board
 				cv_image = self.draw_chess_corners(cv_image, self.chessboard_coord,publisherId, color =(255,0,0) )
-				cv_image = self.draw_chess_corners(cv_image, self.modified_corners,publisherId, color =(0,255,0) )
+				# cv_image = self.draw_chess_corners(cv_image, self.modified_corners,publisherId, color =(0,255,0) )
 				#Project PSM3 pose
 				cv_image = self.draw_psm_axis(cv_image,publisherId)
 
@@ -288,12 +288,12 @@ class dvrk_tf_module:
 	#DRAW  Methods   ##
 	###################
 	def draw_chess_corners(self, img, corners, publisherId, color = (255,255,255)):
-		cam_frame = self.trans_camleft_world if publisherId == 1 else self.trans_camright_world
-		cam_ecm   = self.trans_camleft_ecm if publisherId == 1 else self.trans_camright_ecm
+		# trans_cam_world = self.trans_camleft_world if publisherId == 1 else self.trans_camright_world
+		trans_cam_ecm   = self.trans_camleft_ecm if publisherId == 1 else self.trans_camright_ecm
 		mtx = self.left_mtx if publisherId == 1 else self.right_mtx
 		dist = self.left_dist if publisherId == 1 else self.right_dist
 
-		tvecs, rvecs = self.convert_to_rvec_tvec(cam_ecm*self.trans_ecmb_ecm.Inverse()*self.trans_ecmb_world_l)
+		tvecs, rvecs = self.convert_to_rvec_tvec(trans_cam_ecm*self.trans_ecmb_ecm.Inverse()*self.trans_ecmb_world_l)
 		imgpts, jac = cv2.projectPoints(corners, rvecs, tvecs, mtx, dist)
 		img = self.draw_points(img, imgpts, color)
 
