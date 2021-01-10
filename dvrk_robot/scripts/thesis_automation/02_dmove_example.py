@@ -17,10 +17,10 @@ def pykdl_frame2str(frame):
 
 if __name__ == "__main__":
 
-	sleep_time = 2
+	sleep_time = 0.2
 	
 	psm3 = dvrk.psm('PSM3')
-	time.sleep(0.2)
+	time.sleep(0.3)
 	psm3.home()
 
 	current_pose = psm3.get_current_position()
@@ -64,19 +64,35 @@ if __name__ == "__main__":
 
 			## Movements with full frames (position + orientation)
 			print("Full movement (position + orientation)")
-			psm3.move(PyKDL.Frame(Rotation.Quaternion(0.25502623, -0.12855884,  0.63272046,  0.71979098), Vector(0.25880920, -0.12602521,  0.09615081))) 
+			fix_orientation = Rotation.Quaternion(0.26282424, -0.12377510,  0.49116142,  0.82119644,)
+			#High point
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.20207338, -0.08238340,  0.04522971))) 
+			time.sleep(sleep_time)
+
+			#Point 1
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.25880920, -0.12602521,  0.09615081))) 
 			time.sleep(sleep_time)
 
 			#High point
-			psm3.move(PyKDL.Frame(Rotation.Quaternion(0.26282424, -0.12377510,  0.49116142,  0.82119644,), Vector(0.20207338, -0.08238340,  0.04522971))) 
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.20207338, -0.08238340,  0.04522971))) 
 			time.sleep(sleep_time)
 
-			psm3.move(PyKDL.Frame(Rotation.Quaternion(0.26282424, -0.12377510,  0.49116142,  0.82119644,), Vector(0.16551262, -0.17279799,  0.05455973))) 
+			#Point 2
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.16551262, -0.17279799,  0.05455973))) 
 			time.sleep(sleep_time)
 
 			#High point
-			psm3.move(PyKDL.Frame(Rotation.Quaternion(0.26282424, -0.12377510,  0.49116142,  0.82119644,), Vector(0.20207338, -0.08238340,  0.04522971))) 
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.20207338, -0.08238340,  0.04522971))) 
 			time.sleep(sleep_time)
+
+			#Point 3
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.25669699, -0.17719280,  0.05745484))) 
+			time.sleep(sleep_time)
+
+			#High point
+			psm3.move(PyKDL.Frame(fix_orientation, Vector(0.20207338, -0.08238340,  0.04522971))) 
+			time.sleep(sleep_time)
+
 					
 
 #dmove and Rotation movements didn't seem to work very well 

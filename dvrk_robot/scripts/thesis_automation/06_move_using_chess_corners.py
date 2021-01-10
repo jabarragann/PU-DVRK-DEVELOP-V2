@@ -4,6 +4,9 @@
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 import dvrk
+import tf_conversions.posemath as pm
+import PyKDL 
+from PyKDL import Vector, Rotation
 
 #Ros messages
 from std_msgs.msg import Int32
@@ -13,6 +16,7 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import String as rosString
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
+
 #Python libraries
 import cv2 
 import time
@@ -64,26 +68,64 @@ class PSM3Arm:
 		#python api
 		self.api_psm3_arm = dvrk.arm('PSM3')
 		
+		#tf 
+		self.tf_world_psm3b = None
 
 		#subscribers
 		self.psm3_cartesian_subs = rospy.Subscriber("/dvrk/PSM3/position_cartesian_current", PoseStamped, self.psm3_cartesian_callback)
 		self.psm1_suj_subs = rospy.Subscriber("/dvrk/PSM1/io/suj_clutch", Joy, self.setup_button_psm1_callback)
 
+		#tf 
+		self.tf_world_psm3b_subs = rospy.Subscriber("/pu_dvrk_tf/tf_world_psm3b", PoseStamped, self.tf_world_psm3b_callback)
+		
+		#psm offset
+		self.offset = PyKDL.Vector(-0.007,-0.026,0.082)
+		self.fix_orientation = PyKDL.Rotation.Quaternion(0.26282424, -0.12377510,  0.49116142,  0.82119644,)
+
+	def move_psm3_to(self,new_position):
+		'''
+		new position vector is given with respect to world coordinates
+		'''
+		if self.tf_world_psm3b is None:
+			print("no transformation to move the robot")
+			exit(0)
+
+		#add the offset 
+		new_position = new_position + self.offset
+		#Transform to psmb
+		new_position = self.tf_world_psm3b.Inverse() * new_position
+		
+		# print("moving to new location:")
+		# self.print_vect(new_position)
+
+		self.api_psm3_arm.move(PyKDL.Frame(self.fix_orientation, new_position))
+
 	###########
 	#Callbacks#
 	###########
+	def tf_world_psm3b_callback(self,data):
+		self.tf_world_psm3b = pm.fromMsg(data.pose)
+
 	def psm3_cartesian_callback(self, data):
 		self.arm_kinematic.set_pose(data)
 
 	def setup_button_psm1_callback(self,data):
 		if data.buttons[0]:
 			#Get Python API pose
-			pose = self.api_psm3_arm.get_current_position()
+			pose_in_psm3b = self.api_psm3_arm.get_current_position()
+			pose_in_world = self.tf_world_psm3b * pose_in_psm3b.p
+			offset = PyKDL.Vector(-0.007,-0.026,0.082)
+			scale_fact = 100/1.065
+			normalized = (pose_in_world - offset)
 
-			print("Ros topic pose")
-			print(self.arm_kinematic.create_str_repr())
 			print("Python api pose")
-			print(self.pykdl_frame2str(pose))
+			self.print_vect(pose_in_psm3b.p)
+			print("psm3 origin in world coordinates")
+			self.print_vect(pose_in_world)
+			print("normalized to chessboard")
+			self.print_vect(normalized)
+			print("\n")
+			# print(self.tf_world_psm3b.Inverse()*pose_in_world)
 
 	##########
 	#Other ###
@@ -100,6 +142,9 @@ class PSM3Arm:
 
 	def home(self,):
 		self.api_psm3_arm.home()
+	def print_vect(self, vect):
+		str_rep = "position ({:+0.3f},{:+0.3f},{:+0.3f})".format(vect.x(), vect.y(),vect.z())
+		print(str_rep)
 
 
 
@@ -109,7 +154,37 @@ def main():
 	#Sleep until the subscribers are ready.
 	time.sleep(0.20)
 
-	psm3.home()
+	sleep_time = 0.08 
+	goals = [Vector(0,0,-0.02),Vector(0,0,-0.005), Vector(0.0424, 0.0106,-0.02), Vector(0.0212,0,-0.02)]
+
+	#Corners
+	cols,rows = 5,5
+	chessboard_scale = 1.6 / 100  #1.065 / 100
+	objp = np.zeros((cols * rows, 3), np.float32)  
+	objp[:, :2] = np.mgrid[0:cols, 0:rows].T.reshape(-1, 2)
+	low_chessboard = objp * chessboard_scale + np.array([0,0,-0.0015])
+	
+
+	answer = raw_input("have you check the matrices and the offset are up to date? if yes write 'Y' to continue, else don't move the robot.")
+	if answer != 'Y':
+		print("Exiting the program")
+		exit(0)
+	else:
+		print("Start moving arm 5 times")
+		for i in range(1):
+			print("Movement {:d}".format(i))
+			for i in range(low_chessboard.shape[0]):
+				low_goal = Vector(*low_chessboard[i,:])
+				high_goal = Vector(*(low_chessboard[i,:]+np.array([0,0,-0.015]) ))
+
+				print("goal {:d} ".format(i), low_goal)
+				print("goal {:d} ".format(i), high_goal)
+				print("\n")
+
+				psm3.move_psm3_to(high_goal)
+				time.sleep(sleep_time)
+				psm3.move_psm3_to(low_goal)
+				time.sleep(sleep_time)
 
 	try:
 		while not rospy.core.is_shutdown():

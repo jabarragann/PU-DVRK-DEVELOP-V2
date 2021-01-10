@@ -154,7 +154,7 @@ class dvrk_tf_module:
 			Z = json.load(f)
 		self.trans_psmb_world_l = pm.fromMatrix(np.array(Z['T_from_left']))
 		self.trans_psmb_world_r = pm.fromMatrix(np.array(Z['T_from_right']))
-	
+		
 		###################################
 		#Create kinematic data structures##
 		###################################
@@ -227,6 +227,9 @@ class dvrk_tf_module:
 		############
 		#Publishers#
 		############
+
+		##TF publishers - published everytime in the left camera callback
+		self.tf_world_psm3b_pub = rospy.Publisher("/pu_dvrk_tf/tf_world_psm3b", PoseStamped, queue_size=5)
 
 		##Modified displays + compressed
 		self.image_pub1 = rospy.Publisher("/"+rig_name+"/modified_display_left",Image, queue_size=5)
@@ -366,6 +369,10 @@ class dvrk_tf_module:
 
 	
 		self.modifyImageAndPublish(cv_image, publisherId=1)
+
+		#TF publishers
+		tf_world_psmrb = self.trans_ecmb_world_l.Inverse() * self.trans_ecmb_psmb_l
+		self.publish_tf(tf_world_psmrb, self.tf_world_psm3b_pub)
 
 	def right_callback(self,data):
 
@@ -533,8 +540,10 @@ class dvrk_tf_module:
 		return pm.toMatrix(trans)
 
 	def calculate_trans_cam_psmb(self):
-		trans_cam_psmb_l = self.trans_camleft_ecm.Inverse() * self.trans_ecmb_ecm.Inverse() * self.trans_ecmb_psmb_l 
-		trans_cam_psmb_r = self.trans_camright_ecm.Inverse() *  self.trans_ecmb_ecm.Inverse() * self.trans_ecmb_psmb_l
+		# trans_cam_psmb_l = self.trans_camleft_ecm.Inverse() * self.trans_ecmb_ecm.Inverse() * self.trans_ecmb_psmb_l 
+		# trans_cam_psmb_r = self.trans_camright_ecm.Inverse() *  self.trans_ecmb_ecm.Inverse() * self.trans_ecmb_psmb_l
+		trans_cam_psmb_l = self.trans_camleft_ecm * self.trans_ecmb_ecm.Inverse() * self.trans_ecmb_psmb_l 
+		trans_cam_psmb_r = self.trans_camright_ecm *  self.trans_ecmb_ecm.Inverse() * self.trans_ecmb_psmb_l
 		return trans_cam_psmb_l, trans_cam_psmb_r
 
 	def convert_to_rvec_tvec(self, trans):
@@ -542,3 +551,24 @@ class dvrk_tf_module:
 		tvecs, rvecs = trans_matrix[:3,3],trans_matrix[:3,:3]
 
 		return tvecs, rvecs
+
+	def publish_tf(self,tf, pub):
+		goal = PoseStamped()
+
+		#vect
+		vect = tf.p
+		rot = tf.M.GetQuaternion() 
+		goal.header.seq = 1
+		goal.header.stamp = rospy.Time.now()
+		goal.header.frame_id = "map"
+
+		goal.pose.position.x = vect.x()
+		goal.pose.position.y = vect.y()
+		goal.pose.position.z = vect.z()
+
+		goal.pose.orientation.x = rot[0]
+		goal.pose.orientation.y = rot[1]
+		goal.pose.orientation.z = rot[2]
+		goal.pose.orientation.w = rot[3]
+
+		pub.publish(goal)
