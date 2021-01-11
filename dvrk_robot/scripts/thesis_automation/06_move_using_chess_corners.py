@@ -79,8 +79,8 @@ class PSM3Arm:
 		self.tf_world_psm3b_subs = rospy.Subscriber("/pu_dvrk_tf/tf_world_psm3b", PoseStamped, self.tf_world_psm3b_callback)
 		
 		#psm offset
-		self.offset = PyKDL.Vector(-0.007,-0.026,0.082)
-		self.fix_orientation = PyKDL.Rotation.Quaternion(0.26282424, -0.12377510,  0.49116142,  0.82119644,)
+		self.offset = PyKDL.Vector(-0.009,-0.021,+0.069) 
+		self.fix_orientation = PyKDL.Rotation.Quaternion(0.20611444, -0.10502740,  0.60974223,  0.75809003)
 
 	def move_psm3_to(self,new_position):
 		'''
@@ -155,14 +155,14 @@ def main():
 	time.sleep(0.20)
 
 	sleep_time = 0.08 
-	goals = [Vector(0,0,-0.02),Vector(0,0,-0.005), Vector(0.0424, 0.0106,-0.02), Vector(0.0212,0,-0.02)]
+	# goals = [Vector(0,0,-0.02),Vector(0,0,-0.005), Vector(0.0424, 0.0106,-0.02), Vector(0.0212,0,-0.02)]
 
 	#Corners
-	cols,rows = 5,5
+	cols,rows = 6,6
 	chessboard_scale = 1.6 / 100  #1.065 / 100
 	objp = np.zeros((cols * rows, 3), np.float32)  
 	objp[:, :2] = np.mgrid[0:cols, 0:rows].T.reshape(-1, 2)
-	low_chessboard = objp * chessboard_scale + np.array([0,0,-0.0015])
+	low_chessboard = objp * chessboard_scale + np.array([0,0,-0.0010])
 	
 
 	answer = raw_input("have you check the matrices and the offset are up to date? if yes write 'Y' to continue, else don't move the robot.")
@@ -175,7 +175,7 @@ def main():
 			print("Movement {:d}".format(i))
 			for i in range(low_chessboard.shape[0]):
 				low_goal = Vector(*low_chessboard[i,:])
-				high_goal = Vector(*(low_chessboard[i,:]+np.array([0,0,-0.015]) ))
+				high_goal = Vector(*(low_chessboard[i,:]+np.array([0,0,-0.02]) ))
 
 				print("goal {:d} ".format(i), low_goal)
 				print("goal {:d} ".format(i), high_goal)

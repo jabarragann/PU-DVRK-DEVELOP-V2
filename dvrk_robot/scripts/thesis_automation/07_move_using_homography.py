@@ -6,6 +6,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import dvrk
 import tf_conversions.posemath as pm
 import PyKDL 
+from PyKDL import Vector, Rotation
 
 #Ros messages
 from std_msgs.msg import Int32
@@ -68,7 +69,7 @@ class PSM3Arm:
 		self.api_psm3_arm = dvrk.arm('PSM3')
 		
 		#tf 
-		self.tf_world_psm3b = PyKDL.Frame()
+		self.tf_world_psm3b = None
 
 		#subscribers
 		self.psm3_cartesian_subs = rospy.Subscriber("/dvrk/PSM3/position_cartesian_current", PoseStamped, self.psm3_cartesian_callback)
@@ -77,6 +78,26 @@ class PSM3Arm:
 		#tf 
 		self.tf_world_psm3b_subs = rospy.Subscriber("/pu_dvrk_tf/tf_world_psm3b", PoseStamped, self.tf_world_psm3b_callback)
 		
+		#psm offset
+		self.fix_orientation = PyKDL.Rotation.Quaternion(0.20611444, -0.10502740,  0.60974223,  0.75809003)
+
+	def move_psm3_to(self,new_position):
+		'''
+		new position vector is given with respect to world coordinates
+		'''
+		if self.tf_world_psm3b is None:
+			print("no transformation to move the robot")
+			exit(0)
+
+		#add the offset 
+		new_position = new_position 
+		#Transform to psmb
+		new_position = self.tf_world_psm3b.Inverse() * new_position
+		
+		# print("moving to new location:")
+		# self.print_vect(new_position)
+
+		self.api_psm3_arm.move(PyKDL.Frame(self.fix_orientation, new_position))
 
 	###########
 	#Callbacks#
@@ -86,7 +107,6 @@ class PSM3Arm:
 
 	def psm3_cartesian_callback(self, data):
 		self.arm_kinematic.set_pose(data)
-		
 
 	def setup_button_psm1_callback(self,data):
 		if data.buttons[0]:
@@ -98,8 +118,7 @@ class PSM3Arm:
 			normalized = (pose_in_world - offset)
 
 			print("Python api pose")
-			print(self.pykdl_frame2str(pose_in_psm3b))
-			# self.print_vect(pose_in_psm3b.p)
+			self.print_vect(pose_in_psm3b.p)
 			print("psm3 origin in world coordinates")
 			self.print_vect(pose_in_world)
 			print("normalized to chessboard")
@@ -134,7 +153,31 @@ def main():
 	#Sleep until the subscribers are ready.
 	time.sleep(0.20)
 
-	psm3.home()
+	sleep_time = 0.08 
+	
+	
+
+	answer = raw_input("have you check the matrices and the offset are up to date? if yes write 'Y' to continue, else don't move the robot.")
+	if answer != 'Y':
+		print("Exiting the program")
+		exit(0)
+	else:
+		print("Start moving arm 5 times")
+		for i in range(1):
+			print("Movement {:d}".format(i))
+			
+			new_pos = np.array([ 0.01133553,  0.00684199, 0.062])
+			# new_pos = np.array([ 0.01911197,  0.06291555, 0.062])
+			low_goal = Vector(*new_pos)
+			high_goal = Vector(*(new_pos+np.array([0,0,-0.02])) )
+
+			print(high_goal)
+			print(low_goal)
+
+			psm3.move_psm3_to(high_goal)
+			time.sleep(sleep_time)
+			psm3.move_psm3_to(low_goal)
+			time.sleep(sleep_time)
 
 	try:
 		while not rospy.core.is_shutdown():

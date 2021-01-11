@@ -17,7 +17,7 @@ def pykdl_frame2str(frame):
 
 if __name__ == "__main__":
 
-	sleep_time = 0.2
+	sleep_time = 2
 	
 	psm3 = dvrk.psm('PSM3')
 	time.sleep(0.3)
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 		exit(0)
 	else:
 		print("Start moving arm 5 times")
-		for i in range(5):
+		for i in range(1):
 			print("Movement {:d}".format(i))
 
 			#Incremental Cartesian movements
