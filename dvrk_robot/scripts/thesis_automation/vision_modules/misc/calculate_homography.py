@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import numpy as np 
-
 import cv2
+import json 
 
 def read_file(file):
 
@@ -28,34 +28,43 @@ def read_file(file):
 	return np.array(robot_coord), np.array(pixel_coord)
 
 if __name__ == "__main__":
-
+	np.random.seed(5)
 	print("calculating homography")
 
-	robot_coord, pixel_coord = read_file("./homography_idea_data1.txt")
+	robot_coord, pixel_coord = read_file("./homography_data/homography_idea_data3.txt")
+	print(robot_coord.shape, pixel_coord.shape)
 
-	print(robot_coord)
-	print(pixel_coord)
+	idx = np.random.permutation(10)
+
+	robot_coord1, pixel_coord1 = robot_coord[idx[:7]],pixel_coord[idx[:7]]
+	robot_coord2, pixel_coord2 = robot_coord[idx[7:]],pixel_coord[idx[7:]]
+
+	print(idx)
+	print("training")
+	print(pixel_coord1)
+	print("testing")
+	print(pixel_coord2)
 
 	h, status = cv2.findHomography(pixel_coord, robot_coord) #(src,dst)
-
 	print(h)
 
-	#Test homography 
-	pixel_coord_h = np.ones((7,3))
-	pixel_coord_h[:,:2] = pixel_coord
+	# #Test homography 
+	print("Test homography on the training data")
+	pixel_coord_h1 = np.ones((7,3))
+	pixel_coord_h1[:,:2] = pixel_coord1
 
-	new_robot_coord = np.dot(h,  pixel_coord_h.T).T
+	new_robot_coord = np.dot(h,  pixel_coord_h1.T).T
 
 	new_robot_coord = new_robot_coord / new_robot_coord[:,2].reshape((-1,1))
 	print(new_robot_coord)
 	print(new_robot_coord.shape)
 
-	print(new_robot_coord[:,:2]- robot_coord)
+	print(new_robot_coord[:,:2]- robot_coord1)
 
 
 	#Test on second data
-	print("test on data 2")
-	robot_coord2, pixel_coord2 =  read_file("./homography_idea_data2.txt")
+	print("test on testing data")
+	# robot_coord2, pixel_coord2 =  read_file("./homography_idea_data2.txt")
 	pixel_coord_h2 = np.ones((3,3))
 	pixel_coord_h2[:,:2] = pixel_coord2
 	new_robot_coord2 = np.dot(h,  pixel_coord_h2.T).T
@@ -65,7 +74,16 @@ if __name__ == "__main__":
 
 	#Transform specific point
 	print("\nspecific point ")
-	pix = np.array([[204.0, 188.0,1.0]]).reshape((3,1))
+	pix = np.array([[218.0, 415.0,1.0]]).reshape((3,1))
 	coord = np.dot(h,pix).T
 	coord = coord / coord[:,2]
 	print(coord)
+
+	#Save homography matrix
+
+	lists = h.tolist()
+	json_str = json.dumps(lists, indent=4,)
+
+	with open("./homography_data/homography.json","w") as f1:
+		f1.write(json_str)
+

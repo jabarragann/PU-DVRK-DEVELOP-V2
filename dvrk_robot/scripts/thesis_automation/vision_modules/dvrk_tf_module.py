@@ -7,7 +7,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import tf_conversions.posemath as pm
 import PyKDL
 #Ros messages
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Int32MultiArray
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Joy
@@ -120,6 +120,8 @@ class dvrk_tf_module:
 		self.chessboard_coord = objp * self.chessboard_scale  # Convert to meters
 
 		self.modified_corners = self.chessboard_coord[0:17:2,:] + np.array([[0,0,-2*self.chessboard_scale]])
+
+		self.centroid_coordinates = np.array([[5,5]])
 		# print(self.modified_corners)
 		
 		self.left_mtx = np.array(left_params['mtx'])
@@ -224,6 +226,9 @@ class dvrk_tf_module:
 		self.image_sub_left  = rospy.Subscriber("/"+rig_name+"/left/inverted", Image, self.left_callback)
 		self.image_sub_right = rospy.Subscriber("/"+rig_name+"/right/inverted", Image, self.right_callback)
 
+		#Centroids
+		self.multi_arr_sub = rospy.Subscriber("/pu_dvrk_tf/centroid_coordinates",Int32MultiArray, self.centroids_callback)
+
 		############
 		#Publishers#
 		############
@@ -250,10 +255,14 @@ class dvrk_tf_module:
 			#########################
 			#Add recording indicator#
 			#########################
-			overlay = cv_image.copy()
-			overlay = cv2.putText(overlay, '{:03d}'.format(self.bicoag_count), (0,25), self.font, self.fontSize, self.color, self.thickness, cv2.LINE_AA)
-			cv2.rectangle(cv_image, (600, 0), (640,40), self.color, -1)
-			cv2.addWeighted(overlay, self.alpha, cv_image, 1 - self.alpha, 0, cv_image)
+			# overlay = cv_image.copy()
+			# overlay = cv2.putText(overlay, '{:03d}'.format(self.bicoag_count), (0,25), self.font, self.fontSize, self.color, self.thickness, cv2.LINE_AA)
+			# cv2.rectangle(cv_image, (600, 0), (640,40), self.color, -1)
+			# cv2.addWeighted(overlay, self.alpha, cv_image, 1 - self.alpha, 0, cv_image)
+
+			#Draw centroids
+			# self.draw_points_2(cv_image,self.centroid_coordinates, color= (0,255,0))
+
 
 			############################
 			##Add chess board corners###
@@ -269,7 +278,7 @@ class dvrk_tf_module:
 				# tvecs, rvecs = trans_matrix[:3,3],trans_matrix[:3,:3]
 
 				#Project corners to chess board
-				cv_image = self.draw_chess_corners(cv_image, self.chessboard_coord,publisherId, color =(255,0,0) )
+				# cv_image = self.draw_chess_corners(cv_image, self.chessboard_coord,publisherId, color =(255,0,0) )
 				# cv_image = self.draw_chess_corners(cv_image, self.modified_corners,publisherId, color =(0,255,0) )
 				#Project PSM3 pose
 				cv_image = self.draw_psm_axis(cv_image,publisherId)
@@ -346,6 +355,14 @@ class dvrk_tf_module:
 			image = cv2.circle(img, center_coordinates, radius=3, color=color, thickness=-1)
 		
 		return image
+	def draw_points_2(self, img,pts, color):
+		pts = pts.astype(np.float32) #cv2.circle only accepts float32
+		
+		for i in range(pts.shape[0]):
+			center_coordinates = (pts[i,0], pts[i,1])
+			image = cv2.circle(img, center_coordinates, radius=3, color=color, thickness=-1)
+		
+		return image
 
 	def draw_coordinate_axis(self, x_unit,y_unit,z_unit,orig,img):
 
@@ -388,6 +405,11 @@ class dvrk_tf_module:
 		#Modify image for display
 		self.modifyImageAndPublish(cv_image, publisherId=2)
 
+	def centroids_callback(self, data):
+		arr = np.array(data.data).reshape(-1,2)
+		self.centroid_coordinates = arr
+
+		# print(self.centroid_coordinates)
 
 	###############
 	#ECM callbacks#

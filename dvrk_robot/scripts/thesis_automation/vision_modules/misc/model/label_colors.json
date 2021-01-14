@@ -1,0 +1,42 @@
+[
+    {
+        "name": "Blood",
+        "color": [
+            230,
+            20,
+            20
+        ]
+    },
+    {
+        "name": "Arms",
+        "color": [
+            17,
+            34,
+            165
+        ]
+    },
+    {
+        "name": "Vein",
+        "color": [
+            106,
+            12,
+            235
+        ]
+    },
+    {
+        "name": "Sucking tool",
+        "color": [
+            232,
+            98,
+            59
+        ]
+    },
+    {
+        "name": "Background",
+        "color": [
+            0,
+            0,
+            0
+        ]
+    }
+]

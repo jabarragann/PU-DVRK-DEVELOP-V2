@@ -6,7 +6,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import dvrk
 
 #Ros messages
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Int32MultiArray
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Joy
@@ -69,6 +69,14 @@ class PSM3Arm:
 		self.psm3_cartesian_subs = rospy.Subscriber("/dvrk/PSM3/position_cartesian_current", PoseStamped, self.psm3_cartesian_callback)
 		self.psm1_suj_subs = rospy.Subscriber("/dvrk/PSM1/io/suj_clutch", Joy, self.setup_button_psm1_callback)
 
+		self.tf_world_psm3b_pub = rospy.Publisher("/pu_dvrk_tf/tf_world_psm3b", PoseStamped, queue_size=5)
+
+		#publisher
+		self.multi_arr_pub = rospy.Publisher("/pu_dvrk_tf/centroid_coordinates",Int32MultiArray,queue_size=5)
+
+		#subs
+		# self.multi_arr_pub = rospy.Publisher("/pu_dvrk_tf/centroid_coordinates",UInt8MultiArray,self.centroids_callback)
+		
 	###########
 	#Callbacks#
 	###########
@@ -111,10 +119,18 @@ def main():
 
 	psm3.home()
 
+	#multi array test
+	arr = np.array([[40,50], [580,5]]).astype(np.int32)
+	print(arr)
+	arr = arr.reshape(-1).tolist()
+	arr_to_send = Int32MultiArray()
+	arr_to_send.data = arr
+
 	try:
 		while not rospy.core.is_shutdown():
-			rospy.rostime.wallsleep(0.25)
-
+			psm3.multi_arr_pub.publish(arr_to_send)
+			rospy.rostime.wallsleep(2)
+			
 	except KeyboardInterrupt:
 		print("Shutting down")
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 #Ros libraries
+import torch
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 import dvrk
@@ -46,9 +47,10 @@ class CameraSubscriber:
 			self.right_frame = cv_image
 		except CvBridgeError as e:
 			print(e)
-	
-		cv2.imshow(self.wind_name, cv_image)
-		cv2.waitKey(1)
+		
+		# print(data.width)
+		# cv2.imshow("d", cv_image)
+		# cv2.waitKey(1)
 
 	def get_coordinates(self, event,x,y,flags,param):
 		if event == cv2.EVENT_LBUTTONDOWN:
@@ -59,10 +61,19 @@ def main():
 	#Sleep until the subscribers are ready.
 	time.sleep(0.40)
 
+	# frame = cam.right_frame
+	# cv2.imshow("d", frame)
+	# cv2.waitKey(0)
 
 	try:
 		while not rospy.core.is_shutdown():
-			rospy.rostime.wallsleep(0.25)
+			# rospy.rostime.wallsleep(0.25)
+			frame = cam.right_frame
+			cv2.imshow("img", frame)
+			k = cv2.waitKey(1) & 0xFF
+			if k == 27:
+				break
+			# cv2.waitKey(1)
 
 	except KeyboardInterrupt:
 		print("Shutting down")

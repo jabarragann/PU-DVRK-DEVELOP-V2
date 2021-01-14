@@ -29,6 +29,7 @@ import json
 import socket
 import os
 from os.path import join, exists
+import json
 
 
 class PSM3Arm:
@@ -80,6 +81,26 @@ class PSM3Arm:
 		
 		#psm offset
 		self.fix_orientation = PyKDL.Rotation.Quaternion(0.20611444, -0.10502740,  0.60974223,  0.75809003)
+
+		#Upload homography between pixels and robot x,y
+		self.homography = None
+		with open("./vision_modules/misc/homography_data/homography.json","r") as f1:
+			self.homography = np.array(json.load(f1))
+
+		print("Retrieved homography")
+		print(self.homography)
+
+	def move_using_homography(self, pixel, height):
+		pixel_h = np.ones((3,1))
+		pixel_h[:2,:] = np.array(pixel).reshape((2,1))
+		coord = np.dot(self.homography,pixel_h).T
+		coord = coord / coord[:,2]
+	
+		new_position = PyKDL.Vector(coord[0,0], coord[0,1],height)
+
+		print(new_position)
+
+		self.move_psm3_to(new_position)
 
 	def move_psm3_to(self,new_position):
 		'''
@@ -155,9 +176,8 @@ def main():
 
 	sleep_time = 0.08 
 	
-	
 
-	answer = raw_input("have you check the matrices and the offset are up to date? if yes write 'Y' to continue, else don't move the robot.")
+	answer = raw_input("have you check if the homography is up to date? if yes write 'Y' to continue, else don't move the robot.")
 	if answer != 'Y':
 		print("Exiting the program")
 		exit(0)
@@ -166,18 +186,28 @@ def main():
 		for i in range(1):
 			print("Movement {:d}".format(i))
 			
-			new_pos = np.array([ 0.01133553,  0.00684199, 0.062])
-			# new_pos = np.array([ 0.01911197,  0.06291555, 0.062])
-			low_goal = Vector(*new_pos)
-			high_goal = Vector(*(new_pos+np.array([0,0,-0.02])) )
+			pix = [328,297]
+			height_low = 0.072
+			height_high = height_low - 0.02
+			psm3.move_using_homography(pix,height_high)
+			psm3.move_using_homography(pix,height_low)
+			
 
-			print(high_goal)
-			print(low_goal)
+			# new_pos = np.array([ 0.01024327, 0.00746822, 0.088]) 
+			# new_pos = np.array([ 0.01470842, 0.0539722, 0.088])
+			# #old
+			# #new_pos = np.array([ 0.01133553,  0.00684199, 0.062])
+			# # new_pos = np.array([ 0.01911197,  0.06291555, 0.062])    
+			# low_goal = Vector(*new_pos)
+			# high_goal = Vector(*(new_pos+np.array([0,0,-0.02])) )
 
-			psm3.move_psm3_to(high_goal)
-			time.sleep(sleep_time)
-			psm3.move_psm3_to(low_goal)
-			time.sleep(sleep_time)
+			# print(high_goal)
+			# print(low_goal)
+
+			# psm3.move_psm3_to(high_goal)
+			# time.sleep(sleep_time)
+			# psm3.move_psm3_to(low_goal)
+			# time.sleep(sleep_time)
 
 	try:
 		while not rospy.core.is_shutdown():
