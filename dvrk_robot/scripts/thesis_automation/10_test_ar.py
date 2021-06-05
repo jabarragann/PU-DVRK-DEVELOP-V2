@@ -51,15 +51,15 @@ class PSM3Arm:
 		#tf 
 		self.tf_world_psm3b_subs = rospy.Subscriber("/pu_dvrk_tf/tf_world_psm3b", PoseStamped, self.tf_world_psm3b_callback)
 		
-		self.ar_orientation  = PyKDL.Rotation.Quaternion(0.60939205, -0.44821878,  0.41774239,  0.50322217)
+		self.ar_orientation  = PyKDL.Rotation.Quaternion(0.68175651, -0.27654879,  0.56096521,  0.37953506)
 		self.dvrk_controller.ar_orientation = self.ar_orientation
 
 		self.fix_orientation = PyKDL.Rotation.Quaternion(0.20611444, -0.10502740,  0.60974223,  0.75809003)
-		self.base = Vector(*[ 0.19825322, -0.12229110,  0.05486537]) 
-		self.position1 = Vector(*[0.21956419, -0.14727539,  0.11189935]) 
+		self.base = Vector(*[  0.23937060, -0.09208578,  0.05523316]) 
+		self.position1 = Vector(*[0.27518547, -0.18335637,  0.06959790]) 
 		self.position2 = Vector(*[0.23203641, -0.18565913,  0.06422155]) 
-		self.position3 = Vector(*[0.17023624, -0.19693916,  0.06869363]) 
-		self.position4 = Vector(*[0.16812289, -0.14461934,  0.11209671]) 
+		self.position3 = Vector(*[0.26621665, -0.11688039,  0.07422218]) 
+		self.position4 = Vector(*[0.21614252, -0.10163200,  0.07084345]) 
 
 	###########
 	#Callbacks#
@@ -137,7 +137,7 @@ class PSM3Arm:
 		self.dvrk_controller.activate_ar = False
 
 	def move_rutine_with_animation(self,):
-		sleep_time = 1.0
+		sleep_time = 2.0
 
 		self.api_psm3_arm.move(PyKDL.Frame(self.fix_orientation, self.base)) 
 		self.ar_animation(self.vect2np(self.base), self.vect2np(self.position1))
@@ -232,7 +232,7 @@ def main():
 
 	if answer == 'Y' and not rospy.core.is_shutdown():
 		try:
-			for _ in range(2):
+			for _ in range(1):
 				# psm3.move_rutine()
 				psm3.move_rutine_with_animation()
 		

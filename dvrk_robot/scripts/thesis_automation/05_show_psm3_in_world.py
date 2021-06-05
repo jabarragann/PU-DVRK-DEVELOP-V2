@@ -123,7 +123,7 @@ class PSM3Arm:
 	def home(self,):
 		self.api_psm3_arm.home()
 	def print_vect(self, vect):
-		str_rep = "position ({:+0.3f},{:+0.3f},{:+0.3f})".format(vect.x(), vect.y(),vect.z())
+		str_rep = "position ({:+0.8f},{:+0.8f},{:+0.8f})".format(vect.x(), vect.y(),vect.z())
 		print(str_rep)
 
 

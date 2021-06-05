@@ -8,6 +8,8 @@ sys.path.append("/home/isat/juanantonio/davinci_catkin_ws_1.7/src/dvrk-ros/dvrk_
 from dvrk_tf_module import dvrk_tf_module
 from fcn import VGGNet, FCNs
 import segmentation_utils as utils
+# from recording_module import createTimeStamp, recording_module
+# from socket_client import socket_client
 
 #Ros libraries
 import rospy
@@ -18,7 +20,7 @@ import PyKDL
 from PyKDL import Vector, Rotation
 
 #Ros messages
-from std_msgs.msg import Int32, Int32MultiArray
+from std_msgs.msg import Int32, Int32MultiArray, Bool
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Joy
@@ -113,7 +115,7 @@ class AutonomyModule:
 		self.multi_arr_pub = rospy.Publisher("/pu_dvrk_tf/centroid_coordinates",Int32MultiArray,queue_size=5)
 
 		#psm offset
-		self.fix_orientation = PyKDL.Rotation.Quaternion(0.32794514, -0.22708427,  0.58682993,  0.70463845)
+		self.fix_orientation = PyKDL.Rotation.Quaternion(0.35131810, -0.12377625,  0.53801977,  0.75616781)
 
 		#Upload homography between pixels and robot x,y
 		self.homography = None
@@ -285,92 +287,139 @@ def calculate_centroids(mask,pub,centroid_module):
 
 
 
-def main(args):
+class MainModule:
 
-	psm3 = AutonomyModule(activate_ar=args.activate_ar, activate_debug_visuals=args.activate_debug_visuals)
-	centroid_module = utils.centroid_module()
-	model, labels_dict = create_model()
+	def __init__(self, args):
 
-	#Sleep until the subscribers are ready.
-	time.sleep(0.20)
-	sleep_time = 1.5
+		self.args = args 
+		self.psm3 = AutonomyModule(activate_ar=args.activate_ar, activate_debug_visuals=args.activate_debug_visuals)
+		self.model, self.labels_dict = create_model()
+		self.centroid_module = utils.centroid_module()
 
-	#Centroid coordinates
- 	# centroids = np.array([[168,228]]).astype(np.int32)
-	
-	#Fix landmarks
-	base_position = Vector(*[+0.04527744,-0.02624656,-0.02356771]) 
-	height_low = +0.06738468
-	height_medium = +0.06053191
-	height_high = height_low - 0.05
+		#Sleep until the subscribers are ready.
+		time.sleep(0.20)
+		self.sleep_time = 1.5
 
-	answer = raw_input("Did set velocity? have you check if the homography is up to date? if yes write 'Y' to continue, else don't move the robot. ")
-	if answer != 'Y':
-		print("Exiting the program")
-		exit(0)
-	else:
-		time.sleep(2)
-		print("Move to base position")
-		psm3.move_psm3_to(base_position)
-		time.sleep(1)
+		#Fix landmarks
+		self.base_position = Vector(*[+0.04527744,-0.02624656,-0.02356771]) 
+		self.height_low = +0.07217540
+		self.height_medium = +0.06053191
+		self.height_high = self.height_low - 0.05
 
-		print("Move arm 5 times")
-		try:
-			while not rospy.core.is_shutdown():
-			# for _ in range(1):
+		#Flags 
+		self.autonomy_on = False
 
-				#Calculate centroids
-				final_frame, mask = utils.test_img(psm3.right_frame,model, labels_dict)
-				centroids_coord = calculate_centroids(mask, psm3.multi_arr_pub, centroid_module)
-				#Ask if you want to move to centroid
-				print("centroids", centroids_coord)
+		#############
+        #Subscribers#
+        #############
+		self.autonomy_flag_subs = rospy.Subscriber("/recording_module/autonomy_active", Bool, self.autonomy_callback)
 
-				if centroids_coord.size > 0:
-					answer = 'Y' # raw_input("Do you want to move?")
-					if answer != 'Y':
-						print("Exiting the program")
-						exit(0)
-					else:
-						print("Move to base position")
-						psm3.move_psm3_to(base_position)
-						time.sleep(0.2)
-				
-						# for i in range(centroids_coord.shape[0]):
-						# 	print("Movement {:d}".format(i))
-						
-							
-						pix = centroids_coord[0]
-						print(pix)
+		##We are missing a suscriber to identify when the user wants to directly control the dvrk arm
+		##This is the final piece of the puzzle!
+		
+	def autonomy_callback(self,data):
+		print("autonomy received")
+		print(data)
+		self.autonomy_on = data.data
 
-						#AR animations
-						if args.activate_ar:
-							psm3.ar_animation(base_position, psm3.get_position_homography(pix,height_medium))
-						time.sleep(1.0)
-				
-						#Moving routine
-						psm3.move_using_homography(pix,height_high)
-						psm3.dvrk_controller.activate_ar = False
-						psm3.move_using_homography(pix,height_medium); time.sleep(sleep_time-0.6);
-						psm3.move_using_homography(pix,height_low);time.sleep(sleep_time+0.6);
-						psm3.move_using_homography(pix,height_medium); time.sleep(sleep_time-0.6);
-						psm3.move_using_homography(pix,height_low);time.sleep(sleep_time+0.6);
-						# psm3.move_using_homography(pix,height_medium); time.sleep(sleep_time-0.2);
-						# psm3.move_using_homography(pix,height_low);time.sleep(sleep_time+0.2);
-						#time.sleep(4.5)
-						psm3.move_using_homography(pix,height_high)
-						psm3.move_psm3_to(base_position)
-						# time.sleep(sleep_time)
-				else:
-					print("No pools of blood detected")
+	def run(self):
+		#Make sure everything is ready to go
+		answer = raw_input("Did set velocity? have you check if the homography is up to date? if yes write 'Y' to continue, else don't move the robot. ")
+		if answer != 'Y':
+			print("Exiting the program")
+			exit(0)
+		else:
+			time.sleep(2)
+			print("Move to base position")
+			self.psm3.move_psm3_to(self.base_position)
+			time.sleep(1)
 
-		# try:
-			while not rospy.core.is_shutdown():
-				rospy.rostime.wallsleep(0.25)
+			try:
+				while not rospy.core.is_shutdown():
+					if self.autonomy_on:
+						#Autonomy loop
+						#Calculate centroids of pools of blood
+						final_frame, mask = utils.test_img(self.psm3.right_frame,self.model, self.labels_dict)
+						centroids_coord = calculate_centroids(mask, self.psm3.multi_arr_pub,self.centroid_module)
+						print("centroids", centroids_coord)
 
-		except KeyboardInterrupt:
-			psm3.move_psm3_to(base_position)
-			print("Shutting down")
+						#Move to centroids
+						if centroids_coord.size > 0:
+							print("Move to base position")
+							self.psm3.move_psm3_to(self.base_position)
+							time.sleep(0.2)
+								
+							pix = centroids_coord[0]
+							print(pix)
 
+							#AR animations
+							if self.args.activate_ar:
+								self.psm3.ar_animation(self.base_position, self.psm3.get_position_homography(pix,self.height_medium))
+							time.sleep(1.0)
+					
+							#Moving routine
+							self.move_routine(pix)
+						else:
+							print("No pools of blood detected")
+
+					rospy.rostime.wallsleep(0.25)
+
+			# try:
+				while not rospy.core.is_shutdown():
+					rospy.rostime.wallsleep(0.25)
+
+			except KeyboardInterrupt:
+				psm3.move_psm3_to(base_position)
+				print("Shutting down")
+
+	def move_routine(self, pix):
+		# self.psm3.move_using_homography(pix,self.height_high)
+		# self.deactivate_ar()
+		# self.psm3.move_using_homography(pix,self.height_medium); 
+		# time.sleep(self.sleep_time-0.3);
+		# self.psm3.move_using_homography(pix,self.height_low);
+		# time.sleep(self.sleep_time+0.3);
+		# self.psm3.move_using_homography(pix,self.height_medium); 
+		# time.sleep(self.sleep_time-0.3);
+		# self.psm3.move_using_homography(pix,self.height_low);
+		# time.sleep(self.sleep_time+0.3);
+		# self.psm3.move_using_homography(pix,self.height_high)
+		# self.psm3.move_psm3_to(self.base_position)
+		"""
+		move sequence contains a list of functions an its parameters that form the complete movement of the arm.
+		This was representation was chosen to be able to stop the arm at any part of the sequence
+		"""
+		move_sequence = [[self.psm3.move_using_homography,(pix,self.height_high)],
+						 [self.deactivate_ar,()],
+						 [self.psm3.move_using_homography,(pix,self.height_medium)], 
+						 [time.sleep,(self.sleep_time-0.6,)],
+						 [self.psm3.move_using_homography,(pix,self.height_low)],
+						 [time.sleep,(self.sleep_time+0.6,)],
+						 [self.psm3.move_using_homography,(pix,self.height_medium)],
+						 [time.sleep,(self.sleep_time-0.6,)],
+						 [self.psm3.move_using_homography,(pix,self.height_low)],
+						 [time.sleep,(self.sleep_time+0.6,)],
+						 [self.psm3.move_using_homography,(pix,self.height_high)]]
+
+		count = 0
+		print("mov rutine")
+		for i in range(len(move_sequence)):
+			print("mov ", count)
+			count += 1
+			func, attributes = move_sequence[i]
+			if self.autonomy_on:
+				func(*attributes) 	#do the command
+			else:
+				break
+
+		self.psm3.move_psm3_to(self.base_position)
+
+	# def move_and_sleep(self,pix,height,s_time):
+	# 	self.psm3.move_using_homography(pix,self.height_medium); 
+	# 	time.sleep(self.sleep_time-0.3);
+
+	def deactivate_ar(self,):
+		self.psm3.dvrk_controller.activate_ar = False
 
 def script_config_arg():
 	import argparse
@@ -380,7 +429,7 @@ def script_config_arg():
 	##Visualization arguments -- Control what is display in the screens of the console
 	parser.add_argument('--activate_ar', action='store_true', default=False, help='activate AR visualization (default: disabled)')
 	parser.add_argument('-d', '--activate_debug_visuals', action='store_true', default=False, help='display valid boundary, and saved chessboard corners. (default: disabled)')
-
+	
 	##
 
 	# parser.add_argument('--foo', action='store_const', const=True, default=False,
@@ -394,7 +443,9 @@ def script_config_arg():
 	args = parser.parse_args()
 	return args
 
-args = None
+
 if __name__ == "__main__":
+	args = None
 	args =  script_config_arg()
-	main(args)
+	controller = MainModule(args)
+	controller.run()

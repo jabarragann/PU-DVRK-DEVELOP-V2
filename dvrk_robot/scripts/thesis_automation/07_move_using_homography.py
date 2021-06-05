@@ -186,12 +186,16 @@ def main():
 		for i in range(1):
 			print("Movement {:d}".format(i))
 			
-			pix = [328,297]
+			
+			#(331, 442)
+			# (221, 79)
+
+			pix = [((316, 440))] #(191, 405)(423, 363
 			height_low = 0.072
-			height_high = height_low - 0.02
+			height_high = height_low - 0.04
 			psm3.move_using_homography(pix,height_high)
 			psm3.move_using_homography(pix,height_low)
-			
+			psm3.move_using_homography(pix,height_high)
 
 			# new_pos = np.array([ 0.01024327, 0.00746822, 0.088]) 
 			# new_pos = np.array([ 0.01470842, 0.0539722, 0.088])

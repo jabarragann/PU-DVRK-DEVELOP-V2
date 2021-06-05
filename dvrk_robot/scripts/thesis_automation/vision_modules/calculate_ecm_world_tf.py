@@ -29,18 +29,18 @@ from os.path import join, exists
 from dvrk_tf_module import dvrk_tf_module
 
 
-def main():
+def main(args):
 	rospy.init_node('recording_node')
 	time.sleep(0.2)
 	
 
 	dst_path = "/home/isat/juanantonio/davinci_catkin_ws_1.7/src/dvrk-ros/dvrk_robot/scripts/thesis_automation/vision_modules/test_videos"
-	cm = dvrk_tf_module(userId = "test", dst_path = dst_path, rig_name="pu_dvrk_cam")
+	cm = dvrk_tf_module(userId = "test", dst_path = dst_path, rig_name="pu_dvrk_cam",activate_debug_visuals=args.activate_debug_visuals)
 
 	#Sleep until the subscribers are ready.
 	time.sleep(0.2)
 
-	ans = raw_input("Would you like to recalculate the transformation between the ECM and the wordl? (y/n) ")
+	ans = raw_input("Would you like to recalculate the transformation between the ECM and the world? (y/n) ")
 	if ans == 'y':
 		if not cm.get_cam_world_transform():
 			print("Chessboard was not detected")
@@ -56,7 +56,17 @@ def main():
 	finally:
 		print("exit")
 
+def script_config_arg():
+	import argparse
+	parser = argparse.ArgumentParser()
+	##Visualization arguments -- Control what is display in the screens of the console
+	parser.add_argument('-d', '--activate_debug_visuals', action='store_true', default=False, help='display valid boundary, and saved chessboard corners. (default: disabled)')
+	args = parser.parse_args()
+	return args
 
 if __name__ == "__main__":
-	main()
+    	args = None
+	args =  script_config_arg()
+
+	main(args)
 

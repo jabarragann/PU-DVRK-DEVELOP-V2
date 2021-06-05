@@ -8,7 +8,7 @@ rospy.init_node('acc_vel_ratio')
 r = rospy.Rate(0.1) # 10hz
 
 
-ratio = 0.1
+ratio = 0.20
 velocity_ratio_pub = rospy.Publisher("/dvrk/PSM3/set_joint_velocity_ratio",Float64,latch=True, queue_size=1)
 acceleration_ratio_pub = rospy.Publisher("/dvrk/PSM3/set_joint_acceleration_ratio",Float64,latch=True, queue_size=1)	
 

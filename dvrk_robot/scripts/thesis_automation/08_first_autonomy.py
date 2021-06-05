@@ -176,8 +176,8 @@ def main():
 	sleep_time = 0.8
 
 	#Centroid coordinates
-	centroids = np.array([[379,154],[168,228], [222,421], [409, 351]]).astype(np.int32)
-	# centroids = np.array([[379,154],[168,228]]).astype(np.int32)
+	# centroids = np.array([[379,154],[168,228], [222,421], [409, 351]]).astype(np.int32)
+	centroids = np.array([[255,88],[168,228]]).astype(np.int32)
 	
  
 	base_position = Vector(*[+0.033,-0.012,+0.010]) ##Fill with the appropriate value
@@ -189,7 +189,7 @@ def main():
 	else:
 		print("Move to base position")
 		psm3.move_psm3_to(base_position)
-		time.sleep(7)
+		time.sleep(1)
 
 		print("Start moving arm 5 times")
 		for _ in range(1):
@@ -199,7 +199,7 @@ def main():
 				
 				pix = centroids[i]
 				print(pix)
-				height_low = 0.090
+				height_low = 0.085
 				height_high = height_low - 0.05
 				psm3.move_using_homography(pix,height_high)
 				psm3.move_using_homography(pix,height_low)
