@@ -277,11 +277,12 @@ def create_model():
 def calculate_centroids(mask,pub,centroid_module):
     centroids = centroid_module.calculate_centroids(mask)
     # print(centroids)
-    #use only the biggest centroid
-    centroids = centroids[0,:].reshape((1,2))
-    arr_to_send = Int32MultiArray()
-    arr_to_send.data = centroids.reshape(-1).tolist()
-    pub.publish(arr_to_send)
+    if centroids.size > 0:
+        #use only the biggest centroid
+        centroids = centroids[0,:].reshape((1,2))
+        arr_to_send = Int32MultiArray()
+        arr_to_send.data = centroids.reshape(-1).tolist()
+        pub.publish(arr_to_send)
 
     return centroids 
 
@@ -309,6 +310,7 @@ class MainModule:
         #Flags 
         self.autonomy_on = True 
         self.is_there_cognitive_trigger = False
+        self.pedal_autonomy = False
 
         #############
         #Subscribers#
@@ -339,7 +341,9 @@ class MainModule:
         This is only for testing purposes
         """
         if  data.buttons[0]:
+            self.pedal_autonomy = True
             self.autonomy_trigger_pub.publish(True)
+        pass
 
     def run(self):
         #Make sure everything is ready to go
@@ -355,14 +359,30 @@ class MainModule:
 
             try:
                 while not rospy.core.is_shutdown():
-                    final_frame, mask = utils.test_img(self.psm3.right_frame,self.model, self.labels_dict)
-                    percentage_of_blood = self.centroid_module.calculate_percentage_of_blood(mask)
-                    self.blood_percentage_pub.publish(percentage_of_blood)
 
-                    if self.autonomy_on:
+                    if self.autonomy_on or self.pedal_autonomy:
+                        self.pedal_autonomy = False
                         #Autonomy loop
                         if self.is_there_cognitive_trigger: #This flag is set in a callback function
-                            self.do_suction(mask)   
+                            #Segment image
+                            final_frame, mask = utils.test_img(self.psm3.right_frame,self.model, self.labels_dict)
+                            percentage_of_blood = self.centroid_module.calculate_percentage_of_blood(mask)
+                            self.blood_percentage_pub.publish(percentage_of_blood)
+                            
+                            #calculate the number of suctions based on detected blood percentage
+                            numb_of_suct = 0
+                            if percentage_of_blood < 0.15:
+                                numb_of_suct = 1
+                            elif (percentage_of_blood < 0.25) and (percentage_of_blood > 0.15): 
+                                numb_of_suct = 2
+                            else:
+                                numb_of_suct = 3
+
+                            #Do suction
+                            for _ in range(numb_of_suct):
+                                self.do_suction(mask)   
+
+                            #De activated autonomy
                             self.is_there_cognitive_trigger = False
                             self.autonomy_trigger_pub.publish(False)
  

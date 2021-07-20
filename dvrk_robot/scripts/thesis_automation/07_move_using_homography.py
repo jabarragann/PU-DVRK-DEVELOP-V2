@@ -190,7 +190,7 @@ def main():
 			#(331, 442)
 			# (221, 79)
 
-			pix = [((316, 440))] #(191, 405)(423, 363
+			pix = [((322, 434))] #(191, 405)(423, 363
 			height_low = 0.072
 			height_high = height_low - 0.04
 			psm3.move_using_homography(pix,height_high)

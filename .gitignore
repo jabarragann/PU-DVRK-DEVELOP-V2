@@ -15,3 +15,5 @@ cisstLog.txt
 *.log
 *.html
 config
+*.avi
+*.pickle

@@ -43,7 +43,7 @@ class socket_module:
 
         if debug_mode:
             self.client_socket = self.create_fake_socket()
-        elif:
+        else:
             self.client_socket = self.start_socket()
 
 
@@ -51,7 +51,7 @@ class socket_module:
         #Subscribers#
         #############
         ##Pedals
-		self.bicoag_sub = rospy.Subscriber("/dvrk/footpedals/bicoag", Joy, self.bicoag_callback)#This is only for testing purposes. It should be disabled on the real-experiment
+        self.bicoag_sub = rospy.Subscriber("/dvrk/footpedals/bicoag", Joy, self.bicoag_callback)#This is only for testing purposes. It should be disabled on the real-experiment
 
         #############
         #Publishers #
@@ -68,9 +68,9 @@ class socket_module:
         Trigger autonomy by tapping on the bicoag pedal
         This is only for testing purposes
         """
-		if  data.buttons[0]:
+        if  data.buttons[0]:
             self.autonomy_trigger_pub.publish(True)
-			
+            
     def run_main(self):
         while True:
             data = ""
@@ -106,7 +106,7 @@ class socket_module:
         elif cmd == 'turn off autonomy':
             answer = 'autonomy off (DV)'
             self.is_autonomy_active_pub.publish(False)
-        elif cmd == 'cognitive_trigger':
+        elif cmd == 'cognitive trigger':
             answer = 'executing a suction'
             self.autonomy_trigger_pub.publish(True)
         else:
@@ -136,9 +136,9 @@ class socket_module:
         Only for debugging purposes
         """
         class FakeSocket:
-            def __init__():
+            def __init__(self):
                 pass
-            def recv(x):
+            def recv(self,x):
                 return ''
         return FakeSocket()
     def close_files(self):
@@ -146,7 +146,7 @@ class socket_module:
 
 
 def main():
-	args =  script_config_arg()
+    args =  script_config_arg()
     rospy.init_node('socket_module')
 
     ts = createTimeStamp()
@@ -169,15 +169,15 @@ def main():
         print("Shutting down")
 
 def script_config_arg():
-	import argparse
+    import argparse
 
-	parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('-d', '--dir_name',required=True, help='name of directory, format "Name_Session"')
-	parser.add_argument('--debug_mode', action='store_true', default=False, help='activate debug mode of socket module, i.e., create the module without having a realsocket(default: disabled)')
+    parser.add_argument('--debug_mode', action='store_true', default=False, help='activate debug mode of socket module, i.e., create the module without having a realsocket(default: disabled)')
 
-	args = parser.parse_args()
-    return args	
+    args = parser.parse_args()
+    return args 
 
 if __name__ == '__main__':
     main()

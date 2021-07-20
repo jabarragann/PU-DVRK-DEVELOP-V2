@@ -22,11 +22,11 @@
     <param name="rig_name" value="$(arg rig_name)" />
   </node>
 
-  <!-- create recording node -->
-  <node name="recording_node" pkg="dvrk_robot" type="recording_camera.py" output="screen" args="">
+  <!-- create recording node   <node name="recording_node" pkg="dvrk_robot" type="recording_camera.py" output="screen" args="">
       <param name="subject_id" value="$(arg subject_id)"/>
       <param name="rig_name" value="$(arg rig_name)" />
-  </node>
+  </node> -->
+
   
   <!-- Start the dVRK console -->
   <node name="dvrk_node"

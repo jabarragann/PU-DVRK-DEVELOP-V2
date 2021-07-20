@@ -277,11 +277,12 @@ def create_model():
 def calculate_centroids(mask,pub,centroid_module):
 	centroids = centroid_module.calculate_centroids(mask)
 	# print(centroids)
-	#use only the biggest centroid
-	centroids = centroids[0,:].reshape((1,2))
-	arr_to_send = Int32MultiArray()
-	arr_to_send.data = centroids.reshape(-1).tolist()
-	pub.publish(arr_to_send)
+    if centroids.size > 0:
+        #use only the biggest centroid
+        centroids = centroids[0,:].reshape((1,2))
+        arr_to_send = Int32MultiArray()
+        arr_to_send.data = centroids.reshape(-1).tolist()
+        pub.publish(arr_to_send)
 
 	return centroids 
 

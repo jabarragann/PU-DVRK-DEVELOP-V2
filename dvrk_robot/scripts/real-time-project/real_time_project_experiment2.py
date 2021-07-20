@@ -18,6 +18,7 @@ import os
 from os import mkdir, makedirs
 from os.path import join, exists
 from itertools import chain
+import re
 
 def main():
 	#Get rospy parameters
@@ -71,25 +72,48 @@ def main():
 	message = task_condition + "_" + trial 
 
 	dst_path = "/home/isat/juanantonio/da_vinci_video_recordings/realtime_project_experiments/"
-	dst_path = join(dst_path , user_id + "/" + session + "/" + task_condition + "/" + trial) 
-
+	dst_path = join(dst_path , user_id + "/" + session + "/" )
+	#Create session folder
 	if not exists(dst_path):
-		makedirs(dst_path)
+		makedirs(dst_path )
+
+	#Check if the trial folder hasn't been created
+	dst_path_cp = dst_path
+	dst_path = dst_path_cp + "T{:02d}".format(int(trial)) + "_{:}/".format(task_condition)
+
+	dirs = os.listdir(dst_path_cp)
+	trialAlreadyTaken = any([len(re.findall('T{:02d}'.format(int(trial)), di)) for di in dirs])
+
+	if not trialAlreadyTaken:
+		makedirs(dst_path )
 	else:
 		print("path: ", dst_path)
 		print("Already exists")
 
-		x = raw_input("Do you want to retake data from {:} trial {:} again? (Y/n)\n".format(task_condition, trial))
+		x = raw_input("Do you want to retake data from trial {:} again ({:})? (Y/n)\n".format(trial, task_condition))
 		
 
 		if x =='Y':
 			old_count = 1
-			new_dst_path = dst_path + "_old_{:}".format(old_count)
-			while exists(new_dst_path):
-				old_count += 1
-				new_dst_path = dst_path + "_old_{:}".format(old_count)
+			new_dst_path = dst_path_cp +  "T{:02d}_old{:02d}".format(int(trial),int(old_count))
 
-			os.rename(dst_path, new_dst_path) 
+			dirs = os.listdir(dst_path_cp)
+			re_pattern = "T{:02d}_old{:02d}".format(int(trial),int(old_count))
+			trialAlreadyTaken = any([len(re.findall(re_pattern, di)) for di in dirs])
+
+			while trialAlreadyTaken:
+				old_count += 1
+				
+				re_pattern = "T{:02d}_old{:02d}".format(int(trial),int(old_count))
+				trialAlreadyTaken = any([len(re.findall(re_pattern, di)) for di in dirs]) 
+
+			new_dst_path = dst_path_cp + "T{:02d}_old{:02d}".format(int(trial),int(old_count))
+
+			re.findall('T{:02d}(<)'.format(int(trial)), di)
+			path_to_rename = [di for di in dirs if len(re.findall('T{:02d}(?!_old)'.format(int(trial)), di))][0]
+			# print(path_to_rename, exists(path_to_rename), new_dst_path + path_to_rename[3:])
+			
+			os.rename(dst_path_cp + path_to_rename, new_dst_path + path_to_rename[3:]) 
 			makedirs(dst_path)
 
 		else:

@@ -10,7 +10,7 @@ import time
 # Move PSM1 to the initial position
 mtmr = dvrk.arm('MTMR')
 mtmr.home()
-mtmr_joint_pos = [-0.14427202,  0.18954733, -0.15922543,  1.67041871,  1.68164266,  0.03256702, 0.95332556]
+mtmr_joint_pos =[ 0.03027136,  0.04115939, -0.08394668,  1.88627917,  1.39150009,  0.08585852, 4.84360442] 
 
 print('mtmr current')
 print(mtmr.get_current_joint_position())

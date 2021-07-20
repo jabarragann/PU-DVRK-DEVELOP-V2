@@ -158,6 +158,9 @@ class collection_module:
 		self.score_rect_color = (0,255,0)
 		self.show_score_rect = False
 
+		self.got_a_correct = True
+		self.time_for_reducing_pts = time.time()
+
 		#############
 		#Subscribers#
 		#############
@@ -235,7 +238,9 @@ class collection_module:
 	def update_timer(self, secondsCounter):
 		seconds = secondsCounter % 60
 		minutes = int(secondsCounter / 60)
-		self.timer_str = "{:02d}:{:02d}".format(minutes,seconds)
+		self.timer_str = "{:02d}".format(seconds%10)
+
+		return seconds%10
 
 	def update(self):
 		
@@ -244,7 +249,7 @@ class collection_module:
 			seconds_counter = int((time.time() - self.init_time))
 
 			#Update timer
-			self.update_timer(seconds_counter)
+			current_digit = self.update_timer(seconds_counter)
 			self.display_message = '{:}  T:{:}  {:}  S:{:+03d}'.format(self.message, self.target_str, self.timer_str, self.score)
 
 			# print(seconds_counter)
@@ -253,9 +258,14 @@ class collection_module:
 				self.target = random.sample(range(2,10), self.numb_targets)
 				self.target_str = ','.join([str(i) for i in self.target])
 
-			# #Remove 1 point every time seconds_counter % 10 matches a target
-			# if seconds_counter % 10 in self.target:
-			# 	self.score -= 1
+			#Remove points if the person didnot press the pedal in the 10 second window.
+			if current_digit == 0:
+				if time.time() - self.time_for_reducing_pts > 5:
+					if not self.got_a_correct:
+						self.score -= 3
+
+					self.got_a_correct = False
+					self.time_for_reducing_pts = time.time()
 					
 
 	############
@@ -436,11 +446,13 @@ class collection_module:
 				self.score += 3
 				
 				data.header.frame_id = "right"
+				self.got_a_correct = True
 				self.score_pub.publish(data)
 			else:
-				self.score -= 3
+				self.score -= 2
 				
 				data.header.frame_id = "wrong"
+				self.got_a_correct = True
 				self.score_pub.publish(data)
 
 

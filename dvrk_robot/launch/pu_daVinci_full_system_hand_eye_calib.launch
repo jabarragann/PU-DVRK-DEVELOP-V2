@@ -30,7 +30,7 @@ the camera frame and the end-effector of the ECM arm.)
 
   <!-- create recording node 
   <node name="recording_node" pkg="dvrk_robot" type="hand_eye_calibration_data.py" output="screen" args="">
-      <param name="subject_id" value="$(arg subject_id)"/>
+      <param name="subject_id" value="$(arg dataset_id)"/>
       <param name="rig_name" value="$(arg rig_name)" />
   </node> -->
   
