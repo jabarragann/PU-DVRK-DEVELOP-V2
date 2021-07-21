@@ -10,3 +10,5 @@ Create modified videos topic which configured in the video camera computer to di
 * home\_camera.py
 
 Move ECM to initial position. WARNING: If the ECM setup joints change, do not use this script until checking that there are no obstacles in the home position.
+
+test
