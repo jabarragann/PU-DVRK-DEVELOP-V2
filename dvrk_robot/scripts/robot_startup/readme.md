@@ -1,4 +1,5 @@
 # Miminal scripts to start Purdue's DVRK robot
+Setting up the robot with minimal effort
 
 ## Scripts
 
